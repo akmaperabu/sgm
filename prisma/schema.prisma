@@ -1,0 +1,222 @@
+// Skema database SGM (Support Goods & Maintenance).
+// Dikembangkan di SQLite agar langsung jalan tanpa server DB.
+// Untuk PostgreSQL (sesuai PRD): ganti provider ke "postgresql", set DATABASE_URL,
+// lalu jalankan `npx prisma migrate dev`. Kolom enum disimpan sebagai String
+// (nilai valid didefinisikan di src/lib/constants.ts) agar skema portabel.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- USERS
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String // USER | ADMIN
+  siteId       String?  @map("site_id") // BATULICIN | TANJUNG | KENDARI ; null = lintas site (ADMIN)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  goodsIssues     GoodsIssue[]
+  purchaseRequests PurchaseRequest[]
+  tickets         MaintenanceTicket[]
+
+  @@map("users")
+}
+
+// -------------------------------------------------------------- PERIODS
+model Period {
+  id         String   @id @default(cuid())
+  periodName String   @unique @map("period_name") // cth: 2026-10
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  isActive   Boolean  @default(false) @map("is_active")
+  closedAt   DateTime? @map("closed_at")
+
+  stockCards InventoryStockCard[]
+  movements  StockMovement[]
+  issues     GoodsIssue[]
+  purchases  PurchaseRequest[]
+
+  @@map("periods")
+}
+
+// ------------------------------------------------------------ INVENTORY
+model InventoryItem {
+  id           String   @id @default(cuid())
+  siteId       String   @map("site_id")
+  code         String
+  name         String
+  category     String // ATK | HSE | SPAREPART
+  unit         String   @default("pcs")
+  minStock     Int      @default(0) @map("min_stock")
+  currentStock Int      @default(0) @map("current_stock")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  stockCards InventoryStockCard[]
+  movements  StockMovement[]
+  issues     GoodsIssue[]
+  purchases  PurchaseRequest[]
+
+  @@unique([siteId, code])
+  @@index([siteId, category])
+  @@map("inventory_items")
+}
+
+// Kartu stok per barang per periode bulanan.
+// closing = opening + qty_in - qty_out + qty_adjust
+model InventoryStockCard {
+  id           String @id @default(cuid())
+  itemId       String @map("item_id")
+  periodId     String @map("period_id")
+  siteId       String @map("site_id")
+  openingStock Int    @default(0) @map("opening_stock")
+  qtyIn        Int    @default(0) @map("qty_in")
+  qtyOut       Int    @default(0) @map("qty_out")
+  qtyAdjust    Int    @default(0) @map("qty_adjust")
+  closingStock Int    @default(0) @map("closing_stock")
+
+  item   InventoryItem @relation(fields: [itemId], references: [id])
+  period Period        @relation(fields: [periodId], references: [id])
+
+  @@unique([itemId, periodId])
+  @@index([siteId, periodId])
+  @@map("inventory_stock_cards")
+}
+
+// Log riwayat keluar-masuk barang (Stock Card detail).
+model StockMovement {
+  id        String   @id @default(cuid())
+  siteId    String   @map("site_id")
+  itemId    String   @map("item_id")
+  periodId  String   @map("period_id")
+  type      String // IN | OUT | ADJUST
+  qty       Int // ADJUST bisa bernilai negatif
+  balance   Int // saldo setelah transaksi
+  refType   String?  @map("ref_type") // PR | GI | MANUAL | ADJUSTMENT | MAINTENANCE
+  refNo     String?  @map("ref_no")
+  note      String?
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item   InventoryItem @relation(fields: [itemId], references: [id])
+  period Period        @relation(fields: [periodId], references: [id])
+
+  @@index([siteId, periodId, type])
+  @@map("stock_movements")
+}
+
+// Pengambilan barang gudang (Goods Issue).
+model GoodsIssue {
+  id          String    @id @default(cuid())
+  number      String    @unique
+  siteId      String    @map("site_id")
+  periodId    String    @map("period_id")
+  itemId      String    @map("item_id")
+  qty         Int
+  purpose     String
+  ticketId    String?   @map("ticket_id")
+  status      String    @default("Pending Approval") // Pending Approval | Approved | Rejected
+  requestedBy String    @map("requested_by")
+  decidedBy   String?   @map("decided_by")
+  decidedAt   DateTime? @map("decided_at")
+  rejectNote  String?   @map("reject_note")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  item      InventoryItem      @relation(fields: [itemId], references: [id])
+  period    Period             @relation(fields: [periodId], references: [id])
+  requester User               @relation(fields: [requestedBy], references: [id])
+  ticket    MaintenanceTicket? @relation(fields: [ticketId], references: [id])
+
+  @@index([siteId, periodId, status])
+  @@map("goods_issues")
+}
+
+// Purchase Request: Submitted -> Approved -> On Process -> In Transit -> Complete
+model PurchaseRequest {
+  id              String    @id @default(cuid())
+  prNumber        String    @unique @map("pr_number")
+  siteId          String    @map("site_id")
+  periodId        String    @map("period_id")
+  itemId          String?   @map("item_id")
+  isNewItem       Boolean   @default(false) @map("is_new_item")
+  newItemName     String?   @map("new_item_name")
+  newItemCategory String?   @map("new_item_category")
+  newItemCode     String?   @map("new_item_code")
+  qty             Int
+  notes           String?
+  photoUrl        String?   @map("photo_url")
+  status          String    @default("Submitted") // Submitted | Approved | Rejected | On Process | In Transit | Complete
+  poNumber        String?   @map("po_number")
+  vendor          String?
+  eta             DateTime?
+  trackingNo      String?   @map("tracking_no")
+  requestedBy     String    @map("requested_by")
+  approvedAt      DateTime? @map("approved_at")
+  receivedAt      DateTime? @map("received_at")
+  rejectNote      String?   @map("reject_note")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  item      InventoryItem? @relation(fields: [itemId], references: [id])
+  period    Period         @relation(fields: [periodId], references: [id])
+  requester User           @relation(fields: [requestedBy], references: [id])
+
+  @@index([siteId, periodId, status])
+  @@map("purchase_requests")
+}
+
+// --------------------------------------------------------- MAINTENANCE
+model Asset {
+  id              String    @id @default(cuid())
+  siteId          String    @map("site_id")
+  code            String
+  name            String
+  category        String // ACETYLENE | OXYGEN | UNIT_TRUCK
+  intervalMonths  Int       @default(1) @map("interval_months")
+  scheduleDay     Int       @default(1) @map("schedule_day") // tanggal tetap tiap bulan
+  nextDueDate     DateTime  @map("next_due_date")
+  lastServiceDate DateTime? @map("last_service_date")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  tickets MaintenanceTicket[]
+
+  @@unique([siteId, code])
+  @@map("assets")
+}
+
+model MaintenanceTicket {
+  id          String    @id @default(cuid())
+  number      String    @unique
+  siteId      String    @map("site_id")
+  assetId     String    @map("asset_id")
+  type        String // CORRECTIVE | PREVENTIVE
+  status      String // Open | In Progress | Upcoming | Completed | Skipped | Rejected
+  description String?
+  urgency     String? // Low | Medium | High | Critical
+  photoUrl    String?   @map("photo_url")
+  dueDate     DateTime? @map("due_date") // untuk PREVENTIVE
+  completedAt DateTime? @map("completed_at")
+  resolution  String?
+  skipReason  String?   @map("skip_reason")
+  requestedBy String?   @map("requested_by")
+  handledBy   String?   @map("handled_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  asset     Asset        @relation(fields: [assetId], references: [id])
+  requester User?        @relation(fields: [requestedBy], references: [id])
+  issues    GoodsIssue[]
+
+  @@unique([assetId, type, dueDate])
+  @@index([siteId, type, status])
+  @@map("maintenance_tickets")
+}
