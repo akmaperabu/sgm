@@ -181,12 +181,17 @@ model Asset {
   code            String
   name            String
   category        String // ACETYLENE | OXYGEN | UNIT_TRUCK
-  intervalMonths  Int       @default(1) @map("interval_months")
-  scheduleDay     Int       @default(1) @map("schedule_day") // tanggal tetap tiap bulan
-  nextDueDate     DateTime  @map("next_due_date")
-  lastServiceDate DateTime? @map("last_service_date")
-  isActive        Boolean   @default(true) @map("is_active")
-  createdAt       DateTime  @default(now()) @map("created_at")
+  intervalMonths      Int       @default(1) @map("interval_months")
+  scheduleDay         Int       @default(1) @map("schedule_day") // tanggal tetap tiap bulan
+  nextDueDate         DateTime  @map("next_due_date")
+  lastServiceDate     DateTime? @map("last_service_date")
+  purchaseDate        DateTime? @map("purchase_date")
+  lifespanMonths      Int?      @map("lifespan_months") // target masa pakai awal (bulan)
+  extendedMonths      Int       @default(0) @map("extended_months") // tambahan masa pakai hasil rekondisi / kalibrasi (bulan)
+  lastCalibrationDate DateTime? @map("last_calibration_date") // tanggal kalibrasi / uji akurasi / rekondisi terakhir
+  calibrationNotes    String?   @map("calibration_notes") // catatan hasil kalibrasi / sertifikasi
+  isActive            Boolean   @default(true) @map("is_active")
+  createdAt           DateTime  @default(now()) @map("created_at")
 
   tickets MaintenanceTicket[]
 

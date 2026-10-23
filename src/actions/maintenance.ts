@@ -120,6 +120,11 @@ export async function saveAsset(fd: FormData) {
     const name = req(fd, "name", "Nama aset");
     const category = req(fd, "category", "Kategori");
     if (!ASSET_CATEGORIES.some((c) => c.id === category)) throw new Error("Kategori tidak valid.");
+
+    const purchaseDateStr = opt(fd, "purchaseDate");
+    const purchaseDate = purchaseDateStr ? new Date(purchaseDateStr) : null;
+    const lifespanMonths = opt(fd, "lifespanMonths") ? int(fd, "lifespanMonths", "Target masa pakai") : null;
+
     if (id) {
       const intervalMonths = opt(fd, "intervalMonths") ? int(fd, "intervalMonths", "Interval bulan") : undefined;
       const scheduleDay = opt(fd, "scheduleDay") ? int(fd, "scheduleDay", "Tanggal") : undefined;
@@ -130,6 +135,8 @@ export async function saveAsset(fd: FormData) {
         data: {
           name,
           category,
+          purchaseDate,
+          lifespanMonths,
           ...(intervalMonths !== undefined ? { intervalMonths } : {}),
           ...(scheduleDay !== undefined ? { scheduleDay } : {}),
         },
@@ -144,9 +151,40 @@ export async function saveAsset(fd: FormData) {
     const scheduleDay = int(fd, "scheduleDay", "Tanggal");
     if (intervalMonths < 1 || scheduleDay < 1 || scheduleDay > 31) throw new Error("Interval/tanggal tidak valid.");
     await prisma.asset.create({
-      data: { siteId, code, name, category, intervalMonths, scheduleDay, nextDueDate: firstOccurrence(new Date(), scheduleDay) },
+      data: {
+        siteId,
+        code,
+        name,
+        category,
+        intervalMonths,
+        scheduleDay,
+        purchaseDate,
+        lifespanMonths,
+        nextDueDate: firstOccurrence(new Date(), scheduleDay),
+      },
     });
   });
+}
+
+export async function recordCalibrationOrExtension(fd: FormData) {
+  await requireAdmin();
+  await run("/maintenance/assets", async () => {
+    const id = req(fd, "id");
+    const asset = await prisma.asset.findUniqueOrThrow({ where: { id } });
+    const calDateStr = opt(fd, "calibrationDate");
+    const calDate = calDateStr ? new Date(calDateStr) : new Date();
+    const addMonths = opt(fd, "addMonths") ? int(fd, "addMonths", "Tambahan masa pakai") : 0;
+    const notes = opt(fd, "notes");
+
+    await prisma.asset.update({
+      where: { id: asset.id },
+      data: {
+        lastCalibrationDate: calDate,
+        extendedMonths: (asset.extendedMonths ?? 0) + (addMonths > 0 ? addMonths : 0),
+        calibrationNotes: notes,
+      },
+    });
+  }, "Data kalibrasi / rekondisi berhasil disimpan.");
 }
 
 export async function toggleAsset(fd: FormData) {

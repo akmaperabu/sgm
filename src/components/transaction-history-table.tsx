@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Download, Search, ChevronLeft, ChevronRight, ArrowDownRight, ArrowUpRight, SlidersHorizontal, RefreshCw } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, ArrowDownRight, ArrowUpRight, SlidersHorizontal, RefreshCw, Eye } from "lucide-react";
 import { Badge, Empty, btnPrimary, btnSecondary, inputCls, selectCls, table, tableWrap, td, th } from "./ui";
+import { ViewDetailDialog, DetailSection, DetailItem } from "./view-detail-dialog";
 import { categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDateTime, num } from "@/lib/format";
 
@@ -272,6 +273,7 @@ export function TransactionHistoryTable({
               <th className={th}>Referensi</th>
               <th className={th}>Catatan</th>
               <th className={th}>Operator</th>
+              <th className={th}>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -279,6 +281,54 @@ export function TransactionHistoryTable({
               const isEnter = m.type === "IN";
               const isExit = m.type === "OUT";
               const isAdj = m.type === "ADJUST";
+
+              const detailContent = (
+                <div className="space-y-3.5">
+                  <DetailSection title="Rincian Mutasi Stok">
+                    <DetailItem label="Tanggal & Waktu Transaksi" value={fmtDateTime(m.createdAt)} />
+                    <DetailItem
+                      label="Tipe Transaksi"
+                      value={
+                        isEnter ? (
+                          <Badge tone="green" dot>Barang Masuk (IN)</Badge>
+                        ) : isExit ? (
+                          <Badge tone="red" dot>Barang Keluar (OUT)</Badge>
+                        ) : (
+                          <Badge tone="blue" dot>Penyesuaian (ADJUST)</Badge>
+                        )
+                      }
+                    />
+                    <DetailItem
+                      label="Jumlah Perubahan (Qty)"
+                      value={
+                        <span className={`text-base font-extrabold ${isEnter ? "text-emerald-700" : isExit ? "text-rose-700" : "text-blue-700"}`}>
+                          {isEnter ? `+${num(m.qty)}` : isExit ? `-${num(m.qty)}` : `${m.qty > 0 ? "+" : ""}${num(m.qty)}`} {m.item.unit}
+                        </span>
+                      }
+                    />
+                    <DetailItem
+                      label="Saldo Stok Setelah Transaksi"
+                      value={<span className="text-base font-extrabold text-slate-900">{num(m.balance)} {m.item.unit}</span>}
+                      highlight
+                    />
+                    <DetailItem label="Site Penempatan" value={siteLabel(m.siteId)} />
+                    <DetailItem label="Operator / Dicatat Oleh" value={m.user ? `${m.user.name} (${m.user.role})` : "-"} />
+                  </DetailSection>
+
+                  <DetailSection title="Data Barang Terkait">
+                    <DetailItem label="Nama Barang" value={m.item.name} highlight span2 />
+                    <DetailItem label="Kode Barang" value={<span className="font-mono text-xs">{m.item.code}</span>} />
+                    <DetailItem label="Kategori" value={categoryLabel(m.item.category)} />
+                    <DetailItem label="Satuan Unit" value={m.item.unit} />
+                  </DetailSection>
+
+                  <DetailSection title="Referensi Dokumen & Keterangan">
+                    <DetailItem label="Tipe Referensi" value={m.refType || "-"} />
+                    <DetailItem label="Nomor Dokumen / Ref" value={<span className="font-mono font-bold text-slate-900">{m.refNo || "-"}</span>} />
+                    <DetailItem label="Catatan Transaksi" value={m.note || "-"} span2 />
+                  </DetailSection>
+                </div>
+              );
 
               return (
                 <tr key={m.id} className="group hover:bg-slate-50/70 transition-colors">
@@ -291,8 +341,20 @@ export function TransactionHistoryTable({
                     {isAdj && <Badge tone="blue" dot>Penyesuaian</Badge>}
                   </td>
                   <td className={td}>
-                    <div className="font-semibold text-slate-900">{m.item.name}</div>
-                    <div className="font-mono text-xs text-slate-400 mt-0.5">{m.item.code}</div>
+                    <ViewDetailDialog
+                      title={`Detail Transaksi: ${m.item.name}`}
+                      subtitle={`${m.item.code} • ${fmtDateTime(m.createdAt)}`}
+                      trigger={
+                        <div className="text-left group/item cursor-pointer">
+                          <div className="font-semibold text-slate-900 group-hover/item:text-blue-700 transition-colors underline-offset-2 hover:underline">
+                            {m.item.name}
+                          </div>
+                          <div className="font-mono text-xs text-slate-400 mt-0.5">{m.item.code}</div>
+                        </div>
+                      }
+                    >
+                      {detailContent}
+                    </ViewDetailDialog>
                   </td>
                   <td className={td}>{categoryLabel(m.item.category)}</td>
                   {site === "ALL" && <td className={td}>{siteLabel(m.siteId)}</td>}
@@ -317,12 +379,29 @@ export function TransactionHistoryTable({
                   <td className={`${td} text-xs text-slate-600`}>
                     {m.user?.name || "-"}
                   </td>
+                  <td className={td}>
+                    <ViewDetailDialog
+                      title={`Detail Transaksi: ${m.item.name}`}
+                      subtitle={`${m.item.code} • ${fmtDateTime(m.createdAt)}`}
+                      trigger={
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-blue-700 active:scale-95 transition-all"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-slate-400" />
+                          <span>Detail</span>
+                        </button>
+                      }
+                    >
+                      {detailContent}
+                    </ViewDetailDialog>
+                  </td>
                 </tr>
               );
             })}
             {!filtered.length && (
               <Empty
-                cols={site === "ALL" ? 10 : 9}
+                cols={site === "ALL" ? 11 : 10}
                 text="Tidak ada data riwayat transaksi yang cocok."
               />
             )}

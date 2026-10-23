@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Eye, X } from "lucide-react";
+
+export function ViewDetailDialog({
+  title,
+  subtitle,
+  children,
+  trigger,
+  maxWidth = "w-[min(36rem,calc(100vw-1.5rem))]",
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  trigger?: ReactNode;
+  maxWidth?: string;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const dialogElement = (
+    <dialog
+      ref={ref}
+      onClick={(e) => e.target === ref.current && ref.current?.close()}
+      className={`${maxWidth} m-auto rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-xs`}
+    >
+      <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 sm:px-5 py-3 sm:py-3.5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+          {subtitle && <p className="text-xs text-slate-500 font-mono mt-0.5">{subtitle}</p>}
+        </div>
+        <button
+          type="button"
+          aria-label="Tutup"
+          onClick={() => ref.current?.close()}
+          className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 active:scale-95 transition-all"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="max-h-[82vh] overflow-y-auto p-4 sm:p-5 text-xs text-slate-700 space-y-3.5">
+        {children}
+      </div>
+    </dialog>
+  );
+
+  return (
+    <>
+      {trigger ? (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={() => ref.current?.showModal()}
+          onKeyDown={(e) => e.key === "Enter" && ref.current?.showModal()}
+          className="cursor-pointer"
+        >
+          {trigger}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => ref.current?.showModal()}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+        >
+          <Eye className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+          <span>Lihat Detail</span>
+        </button>
+      )}
+
+      {mounted && typeof document !== "undefined"
+        ? createPortal(dialogElement, document.body)
+        : null}
+    </>
+  );
+}
+
+export function DetailSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5 space-y-2.5">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{title}</div>
+      <div className="grid grid-cols-2 gap-2.5 text-xs">{children}</div>
+    </div>
+  );
+}
+
+export function DetailItem({
+  label,
+  value,
+  span2 = false,
+  highlight = false,
+}: {
+  label: string;
+  value: ReactNode;
+  span2?: boolean;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={span2 ? "col-span-2" : "col-span-1"}>
+      <span className="block text-[11px] font-medium text-slate-500 mb-0.5">{label}</span>
+      <div className={`font-medium ${highlight ? "font-bold text-slate-900 text-sm" : "text-slate-800"}`}>
+        {value ?? "-"}
+      </div>
+    </div>
+  );
+}

@@ -44,3 +44,114 @@ export function firstOccurrence(from: Date, day: number) {
 }
 
 export const num = (n: number) => n.toLocaleString("id-ID");
+
+export interface AssetLifespanInfo {
+  ageLabel: string;
+  totalMonthsAge: number;
+  totalLifespanMonths: number;
+  targetExpiry: Date | null;
+  hasTarget: boolean;
+  status: "NORMAL" | "HEALTHY" | "WARNING" | "OVERDUE";
+  statusLabel: string;
+  percentUsed: number | null;
+  remainingLabel: string | null;
+  isOverdue: boolean;
+  isNearEnd: boolean;
+}
+
+/**
+ * Menghitung usia berjalan alat, target masa pakai (termasuk perpanjangan kalibrasi/rekondisi),
+ * sisa waktu, persentase aus, dan status evaluasi.
+ */
+export function getAssetLifespanInfo(
+  purchaseDate?: Date | string | null,
+  lifespanMonths?: number | null,
+  extendedMonths: number = 0,
+  referenceDate: Date = new Date()
+): AssetLifespanInfo | null {
+  if (!purchaseDate) return null;
+
+  const pDate = new Date(purchaseDate);
+  const now = referenceDate;
+
+  // Hitung usia dalam bulan
+  let monthsAge = (now.getFullYear() - pDate.getFullYear()) * 12 + (now.getMonth() - pDate.getMonth());
+  if (now.getDate() < pDate.getDate()) {
+    monthsAge = Math.max(0, monthsAge - 1);
+  }
+  monthsAge = Math.max(0, monthsAge);
+
+  const years = Math.floor(monthsAge / 12);
+  const remainingMonths = monthsAge % 12;
+  const ageLabel =
+    years > 0
+      ? remainingMonths > 0
+        ? `${years} thn ${remainingMonths} bln`
+        : `${years} thn`
+      : monthsAge === 0
+      ? "< 1 bln"
+      : `${remainingMonths} bln`;
+
+  if (!lifespanMonths || lifespanMonths <= 0) {
+    return {
+      ageLabel,
+      totalMonthsAge: monthsAge,
+      totalLifespanMonths: 0,
+      targetExpiry: null,
+      hasTarget: false,
+      status: "NORMAL",
+      statusLabel: "Tanpa Batas Target",
+      percentUsed: null,
+      remainingLabel: null,
+      isOverdue: false,
+      isNearEnd: false,
+    };
+  }
+
+  const totalLifespanMonths = lifespanMonths + (extendedMonths || 0);
+  const targetExpiry = new Date(pDate.getFullYear(), pDate.getMonth() + totalLifespanMonths, pDate.getDate());
+
+  const diffDays = daysBetween(now, targetExpiry);
+  const isOverdue = diffDays < 0;
+
+  const percentUsed = Math.min(200, Math.max(0, Math.round((monthsAge / totalLifespanMonths) * 100)));
+
+  const remainingMonthsDiff = totalLifespanMonths - monthsAge;
+  let remainingLabel = "";
+  if (isOverdue) {
+    const overdueMonths = Math.abs(remainingMonthsDiff);
+    const oYears = Math.floor(overdueMonths / 12);
+    const oMonths = overdueMonths % 12;
+    remainingLabel = `Lewat ${oYears > 0 ? `${oYears} thn ${oMonths} bln` : `${oMonths || 1} bln`}`;
+  } else {
+    const rYears = Math.floor(remainingMonthsDiff / 12);
+    const rMonths = remainingMonthsDiff % 12;
+    remainingLabel = `Sisa ${rYears > 0 ? `${rYears} thn ${rMonths} bln` : `${rMonths} bln`}`;
+  }
+
+  const isNearEnd = !isOverdue && (remainingMonthsDiff <= 6 || percentUsed >= 80);
+
+  let status: "HEALTHY" | "WARNING" | "OVERDUE" = "HEALTHY";
+  let statusLabel = "Prima / Normal";
+  if (isOverdue) {
+    status = "OVERDUE";
+    statusLabel = "Perlu Kalibrasi / Rekondisi";
+  } else if (isNearEnd) {
+    status = "WARNING";
+    statusLabel = "Mendekati Batas";
+  }
+
+  return {
+    ageLabel,
+    totalMonthsAge: monthsAge,
+    totalLifespanMonths,
+    targetExpiry,
+    hasTarget: true,
+    status,
+    statusLabel,
+    percentUsed,
+    remainingLabel,
+    isOverdue,
+    isNearEnd,
+  };
+}

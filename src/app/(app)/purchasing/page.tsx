@@ -4,11 +4,12 @@ import { PageHeader } from "@/components/page-header";
 import { FormDialog } from "@/components/form-dialog";
 import { RowActionMenu } from "@/components/row-action-menu";
 import { PurchaseRequestForm } from "@/components/purchase-request-form";
+import { ViewDetailDialog, DetailSection, DetailItem } from "@/components/view-detail-dialog";
 import { Badge, Empty, Field, StatusBadge, btnDanger, btnPrimary, inputCls, selectCls, stickyTd, stickyTh, table, tableWrap, td, th } from "@/components/ui";
 import { ITEM_CATEGORIES, PR_FLOW, categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDate, num } from "@/lib/format";
 import { advancePurchase } from "@/actions/goods";
-import { Camera, CheckCircle2, Clock, PackageCheck, Truck, XCircle } from "lucide-react";
+import { Camera, CheckCircle2, Clock, PackageCheck, Truck, XCircle, Eye } from "lucide-react";
 
 function Progress({ status }: { status: string }) {
   const idx = PR_FLOW.indexOf(status as (typeof PR_FLOW)[number]);
@@ -64,19 +65,74 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
               {ctx.site === "ALL" && <th className={th}>Site</th>}
               <th className={th}>Kategori</th><th className={`${th} text-right`}>Qty</th><th className={th}>Pemohon</th>
               <th className={th}>Progres</th><th className={th}>Status</th><th className={th}>PO / Vendor</th><th className={th}>Resi / ETA</th>
-              {canEdit && <th className={th}>Aksi</th>}
+              <th className={th}>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {prs.map((p) => {
               const name = p.item?.name ?? p.newItemName;
+
+              const detailContent = (
+                <div className="space-y-3.5">
+                  <DetailSection title="Rincian Purchase Request (PR)">
+                    <DetailItem label="Nomor Dokumen PR" value={<span className="font-mono font-bold text-slate-900">{p.prNumber}</span>} />
+                    <DetailItem label="Tanggal Pengajuan" value={fmtDate(p.createdAt)} />
+                    <DetailItem label="Status Saat Ini" value={<StatusBadge status={p.status} />} />
+                    <DetailItem label="Alur Tahapan" value={<Progress status={p.status} />} />
+                    <DetailItem label="Pemohon (Requester)" value={p.requester.name} />
+                    <DetailItem label="Site Tujuan" value={siteLabel(p.siteId)} />
+                    <DetailItem label="Catatan / Spesifikasi" value={p.notes || "-"} span2 />
+                    {p.rejectNote && (
+                      <DetailItem label="Alasan Penolakan" value={<span className="text-rose-700 font-medium">{p.rejectNote}</span>} span2 />
+                    )}
+                  </DetailSection>
+
+                  <DetailSection title="Data Barang Diminta">
+                    <DetailItem label="Nama Barang" value={name} highlight span2 />
+                    <DetailItem label="Jenis Barang" value={p.isNewItem ? "Barang Baru (Pengadaan Baru)" : "Barang Terdaftar di Master"} />
+                    <DetailItem label="Kategori" value={categoryLabel(p.item?.category ?? p.newItemCategory)} />
+                    <DetailItem label="Jumlah Permintaan (Qty)" value={<span className="text-base font-extrabold text-blue-700">{num(p.qty)}</span>} highlight />
+                    {p.photoUrl && (
+                      <DetailItem
+                        label="Foto Sampel"
+                        value={
+                          <a href={p.photoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-blue-700 underline font-medium">
+                            <Camera className="h-3.5 w-3.5" /> Lihat Foto Contoh
+                          </a>
+                        }
+                        span2
+                      />
+                    )}
+                  </DetailSection>
+
+                  <DetailSection title="Tracking Pembelian & Pengiriman (PO)">
+                    <DetailItem label="Nomor PO" value={<span className="font-mono font-bold">{p.poNumber || "-"}</span>} />
+                    <DetailItem label="Nama Vendor / Toko" value={p.vendor || "-"} />
+                    <DetailItem label="Nomor Resi / Surat Jalan" value={<span className="font-mono">{p.trackingNo || "-"}</span>} />
+                    <DetailItem label="Estimasi Tiba (ETA)" value={p.eta ? fmtDate(p.eta) : "-"} />
+                    <DetailItem label="Disetujui Tanggal" value={fmtDate(p.approvedAt)} />
+                    <DetailItem label="Diterima Fisik di Gudang" value={fmtDate(p.receivedAt)} />
+                  </DetailSection>
+                </div>
+              );
+
               return (
                 <tr key={p.id} className="group hover:bg-slate-50/70 transition-colors">
                   <td className={`${td} ${stickyTd}`}>
-                    <div className="font-semibold text-slate-900 flex items-center gap-2">
-                      <span>{name}</span>
-                      {p.isNewItem && <Badge tone="blue">Barang Baru</Badge>}
-                    </div>
+                    <ViewDetailDialog
+                      title={`Detail PR: ${p.prNumber}`}
+                      subtitle={`${name} • ${siteLabel(p.siteId)}`}
+                      trigger={
+                        <div className="text-left group/item cursor-pointer">
+                          <div className="font-semibold text-slate-900 group-hover/item:text-blue-700 transition-colors underline-offset-2 hover:underline flex items-center gap-2">
+                            <span>{name}</span>
+                            {p.isNewItem && <Badge tone="blue">Barang Baru</Badge>}
+                          </div>
+                        </div>
+                      }
+                    >
+                      {detailContent}
+                    </ViewDetailDialog>
                     {p.notes && <div className="max-w-60 truncate text-xs font-normal text-slate-400 mt-0.5" title={p.notes}>{p.notes}</div>}
                     {p.photoUrl && (
                       <div className="mt-1">
@@ -104,10 +160,23 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                   <td className={td}><StatusBadge status={p.status} />{p.rejectNote && <div className="text-xs text-rose-700 font-medium mt-1">{p.rejectNote}</div>}</td>
                   <td className={`${td} text-xs`}><span className="font-mono text-slate-800 font-medium">{p.poNumber ?? "-"}</span><div className="text-slate-400 mt-0.5">{p.vendor ?? ""}</div></td>
                   <td className={`${td} text-xs`}><span className="font-mono text-slate-800 font-medium">{p.trackingNo ?? "-"}</span><div className="font-mono text-slate-400 mt-0.5">{p.eta ? fmtDate(p.eta) : ""}</div></td>
-                  {canEdit && (
-                    <td className={td}>
-                      {["Submitted", "Approved", "On Process", "In Transit"].includes(p.status) ? (
-                        <RowActionMenu>
+                  <td className={td}>
+                    <RowActionMenu>
+                      <ViewDetailDialog
+                        title={`Detail PR: ${p.prNumber}`}
+                        subtitle={`${name} • ${siteLabel(p.siteId)}`}
+                        trigger={
+                          <div className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                            <Eye className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                            <span>Lihat Detail</span>
+                          </div>
+                        }
+                      >
+                        {detailContent}
+                      </ViewDetailDialog>
+
+                      {canEdit && (
+                        <>
                           {p.status === "Submitted" && (
                             <>
                               <FormDialog
@@ -267,12 +336,10 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                               </form>
                             )
                           )}
-                        </RowActionMenu>
-                      ) : (
-                        <span className="text-slate-400">-</span>
+                        </>
                       )}
-                    </td>
-                  )}
+                    </RowActionMenu>
+                  </td>
                 </tr>
               );
             })}
