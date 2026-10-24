@@ -12,8 +12,14 @@ type Opt = { id: string; label: string; siteId: string };
 export function PurchaseRequestForm({ items, isAdmin, defaultSite }: { items: Opt[]; isAdmin: boolean; defaultSite: string }) {
   const [site, setSite] = useState(defaultSite);
   const [sel, setSel] = useState("");
+  const [qty, setQty] = useState<number | "">(1);
+  const [price, setPrice] = useState<number | "">("");
   const list = isAdmin ? items.filter((i) => i.siteId === site) : items;
   const isNew = sel === "__NEW__";
+
+  const numQty = typeof qty === "number" && qty > 0 ? qty : 0;
+  const numPrice = typeof price === "number" && price > 0 ? price : 0;
+  const total = numQty * numPrice;
 
   return (
     <form action={requestPurchase} className="grid gap-3.5">
@@ -61,9 +67,42 @@ export function PurchaseRequestForm({ items, isAdmin, defaultSite }: { items: Op
         </div>
       )}
 
-      <Field label="Jumlah Kebutuhan">
-        <input name="qty" type="number" min={1} required className={`${inputCls} font-mono`} placeholder="Jumlah barang" />
-      </Field>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="Jumlah Kebutuhan">
+          <input
+            name="qty"
+            type="number"
+            min={1}
+            required
+            value={qty}
+            onChange={(e) => setQty(e.target.value ? Number(e.target.value) : "")}
+            className={`${inputCls} font-mono`}
+            placeholder="Jumlah barang"
+          />
+        </Field>
+
+        <Field label="Estimasi Harga Satuan (Rp, opsional)">
+          <input
+            name="estimatedPrice"
+            type="number"
+            min={0}
+            step="1000"
+            value={price}
+            onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : "")}
+            className={`${inputCls} font-mono`}
+            placeholder="cth: 250000"
+          />
+        </Field>
+      </div>
+
+      {total > 0 && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-3.5 py-2.5 flex items-center justify-between text-xs">
+          <span className="text-emerald-800 font-medium">Total Estimasi Anggaran:</span>
+          <span className="font-mono font-bold text-emerald-900 text-sm">
+            Rp {Math.round(total).toLocaleString("id-ID")}
+          </span>
+        </div>
+      )}
 
       <Field label="Spesifikasi / Catatan">
         <textarea name="notes" rows={3} placeholder="Keterangan spesifikasi teknis / alasan pembelian..." className={`${inputCls} !h-auto py-2.5`} />

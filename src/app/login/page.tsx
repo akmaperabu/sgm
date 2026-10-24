@@ -37,7 +37,7 @@ export default function LoginPage() {
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
               {mode === "login" ? (
                 <>
-                  <span>Welcome Back</span>
+                  <span>Selamat Datang</span>
                 </>
               ) : (
                 <>
@@ -47,7 +47,7 @@ export default function LoginPage() {
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-slate-500 font-medium">
               {mode === "login"
-                ? "Hey, welcome back to your special place"
+                ? "Silakan masuk ke akun Anda untuk melanjutkan"
                 : "Silakan lengkapi data berikut"}
             </p>
           </div>
@@ -74,7 +74,7 @@ export default function LoginPage() {
                   required
                   autoComplete="username"
                   className="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#5D5FEF] focus:outline-none focus:ring-2 focus:ring-[#5D5FEF]/15 transition-all shadow-2xs"
-                  placeholder="dudek@gmail.com"
+                  placeholder="nama@gmail.com"
                 />
               </div>
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
                   required
                   autoComplete="current-password"
                   className="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white pl-4 pr-11 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#5D5FEF] focus:outline-none focus:ring-2 focus:ring-[#5D5FEF]/15 transition-all shadow-2xs"
-                  placeholder="••••••••••••"
+                  placeholder="•••••••"
                 />
                 <button
                   type="button"
@@ -107,14 +107,14 @@ export default function LoginPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="h-4 w-4 rounded-md border-slate-300 text-[#5D5FEF] focus:ring-[#5D5FEF]"
                   />
-                  <span className="font-medium">Remember me</span>
+                  <span className="font-medium">Ingat Saya</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(true)}
                   className="font-medium text-slate-500 hover:text-slate-800 transition-colors"
                 >
-                  Forgot Password?
+                  Lupa Kata Sandi?
                 </button>
               </div>
 
@@ -124,7 +124,7 @@ export default function LoginPage() {
                   disabled={isPending}
                   className="w-full h-11 sm:h-12 rounded-xl font-semibold text-xs sm:text-sm text-white bg-[#5D5FEF] hover:bg-[#4E50E0] active:scale-[0.99] transition-all shadow-md shadow-[#5D5FEF]/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isPending ? "Memproses..." : "Sign In"}
+                  {isPending ? "Memproses..." : "Masuk"}
                 </button>
               </div>
             </form>
@@ -210,24 +210,24 @@ export default function LoginPage() {
         <div className="pt-6 pb-2 text-xs sm:text-sm text-slate-500 max-w-md w-full mx-auto lg:mx-0">
           {mode === "login" ? (
             <span>
-              Don&apos;t have an account?{" "}
+              Belum memiliki akun?{" "}
               <button
                 type="button"
                 onClick={() => setMode("register")}
                 className="font-bold text-[#5D5FEF] hover:underline"
               >
-                Sign Up
+                Daftar
               </button>
             </span>
           ) : (
             <span>
-              Already have an account?{" "}
+              Sudah memiliki akun?{" "}
               <button
                 type="button"
                 onClick={() => setMode("login")}
                 className="font-bold text-[#5D5FEF] hover:underline"
               >
-                Sign In
+                Masuk
               </button>
             </span>
           )}

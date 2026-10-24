@@ -155,8 +155,12 @@ model PurchaseRequest {
   notes           String?
   photoUrl        String?   @map("photo_url")
   status          String    @default("Submitted") // Submitted | Approved | Rejected | On Process | In Transit | Complete
+  estimatedPrice  Float?    @map("estimated_price")
+  totalPrice      Float?    @map("total_price")
+  receivedQty     Int       @default(0) @map("received_qty")
   poNumber        String?   @map("po_number")
   vendor          String?
+  vendorId        String?   @map("vendor_id")
   eta             DateTime?
   trackingNo      String?   @map("tracking_no")
   requestedBy     String    @map("requested_by")
@@ -166,12 +170,28 @@ model PurchaseRequest {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  item      InventoryItem? @relation(fields: [itemId], references: [id])
-  period    Period         @relation(fields: [periodId], references: [id])
-  requester User           @relation(fields: [requestedBy], references: [id])
+  item           InventoryItem? @relation(fields: [itemId], references: [id])
+  period         Period         @relation(fields: [periodId], references: [id])
+  requester      User           @relation(fields: [requestedBy], references: [id])
+  vendorRelation Vendor?        @relation(fields: [vendorId], references: [id])
 
   @@index([siteId, periodId, status])
   @@map("purchase_requests")
+}
+
+// ------------------------------------------------------------- VENDORS
+model Vendor {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  contactPerson String?  @map("contact_person")
+  phone         String?
+  address       String?
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  purchaseRequests PurchaseRequest[]
+
+  @@map("vendors")
 }
 
 // --------------------------------------------------------- MAINTENANCE

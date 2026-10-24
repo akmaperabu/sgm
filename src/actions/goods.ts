@@ -192,11 +192,17 @@ export async function requestPurchase(fd: FormData) {
     const period = await ensureActivePeriod();
     const uploadedPhoto = await saveUploadedFile(fd.get("photo"));
     const photoUrl = uploadedPhoto ?? opt(fd, "photoUrl");
+    const rawPrice = opt(fd, "estimatedPrice");
+    const estimatedPrice = rawPrice ? Math.max(0, Number(rawPrice)) : null;
+    const totalPrice = estimatedPrice && estimatedPrice > 0 ? estimatedPrice * qty : null;
+
     const base = {
       prNumber: await nextNumber("PR", period.periodName),
       siteId,
       periodId: period.id,
       qty,
+      estimatedPrice,
+      totalPrice,
       notes: opt(fd, "notes"),
       photoUrl,
       requestedBy: user.id,
@@ -251,9 +257,24 @@ export async function advancePurchase(fd: FormData) {
 
     if (step === "process") {
       if (pr.status !== "Approved") throw new Error("PR harus berstatus Approved.");
+      const vendorId = req(fd, "vendorId", "Vendor rekanan");
+      const v = await prisma.vendor.findUnique({ where: { id: vendorId } });
+      if (!v) throw new Error("Vendor yang dipilih tidak ditemukan dalam Master Data. Silakan daftarkan vendor terlebih dahulu.");
+      const vendorName = v.name;
+
+      const rawPrice = opt(fd, "estimatedPrice");
+      const updatedPrice = rawPrice ? Math.max(0, Number(rawPrice)) : undefined;
+      const updatedTotal = updatedPrice ? updatedPrice * pr.qty : undefined;
+
       await prisma.purchaseRequest.update({
         where: { id: pr.id },
-        data: { status: "On Process", poNumber: req(fd, "poNumber", "Nomor PO"), vendor: opt(fd, "vendor") },
+        data: {
+          status: "On Process",
+          poNumber: req(fd, "poNumber", "Nomor PO"),
+          vendor: vendorName || null,
+          vendorId: vendorId || null,
+          ...(updatedPrice !== undefined && { estimatedPrice: updatedPrice, totalPrice: updatedTotal }),
+        },
       });
       return;
     }
@@ -269,14 +290,21 @@ export async function advancePurchase(fd: FormData) {
     }
 
     if (step === "complete") {
-      if (pr.status !== "In Transit") throw new Error("PR harus berstatus In Transit.");
-      const qty = opt(fd, "receivedQty") ? int(fd, "receivedQty", "Jumlah diterima") : pr.qty;
-      if (qty <= 0) throw new Error("Jumlah diterima harus lebih dari 0.");
+      if (!["In Transit", "Partially Received"].includes(pr.status)) {
+        throw new Error("PR harus berstatus In Transit atau Diterima Sebagian.");
+      }
+      const remaining = Math.max(0, pr.qty - pr.receivedQty);
+      const batchQty = opt(fd, "receivedQty") ? int(fd, "receivedQty", "Jumlah diterima") : remaining;
+      if (batchQty <= 0) throw new Error("Jumlah diterima harus lebih dari 0.");
+      if (batchQty > remaining) throw new Error(`Jumlah diterima (${batchQty}) melebihi sisa pesanan (${remaining}).`);
+
+      const newTotalReceived = pr.receivedQty + batchQty;
+      const isComplete = newTotalReceived >= pr.qty;
 
       await prisma.$transaction(async (tx) => {
         let itemId = pr.itemId;
 
-        // Jika barang baru dan belum terdaftar di Master Data: daftarkan sekarang saat fisik tiba
+        // Jika barang baru dan belum terdaftar di Master Data: daftarkan sekarang saat fisik pertama tiba
         if (pr.isNewItem && !itemId) {
           const name = opt(fd, "name") ?? opt(fd, "newItemName") ?? pr.newItemName!;
           const category = validCat(opt(fd, "category") ?? opt(fd, "newItemCategory") ?? pr.newItemCategory!);
@@ -300,16 +328,21 @@ export async function advancePurchase(fd: FormData) {
         await moveStock(tx, {
           itemId,
           type: "IN",
-          qty,
+          qty: batchQty,
           refType: "PR",
           refNo: pr.poNumber ?? pr.prNumber,
-          note: `Penerimaan ${pr.prNumber}`,
+          note: `Penerimaan ${pr.prNumber} (${newTotalReceived}/${pr.qty})`,
           userId: admin.id,
         });
 
         await tx.purchaseRequest.update({
           where: { id: pr.id },
-          data: { status: "Complete", itemId, receivedAt: new Date() },
+          data: {
+            status: isComplete ? "Complete" : "Partially Received",
+            receivedQty: newTotalReceived,
+            itemId,
+            receivedAt: new Date(),
+          },
         });
       });
       return;

@@ -9,7 +9,7 @@ export function ViewDetailDialog({
   subtitle,
   children,
   trigger,
-  maxWidth = "w-[min(36rem,calc(100vw-1.5rem))]",
+  maxWidth = "w-[min(38rem,calc(100vw-1.5rem))]",
 }: {
   title: string;
   subtitle?: string;
@@ -28,23 +28,23 @@ export function ViewDetailDialog({
     <dialog
       ref={ref}
       onClick={(e) => e.target === ref.current && ref.current?.close()}
-      className={`${maxWidth} m-auto rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-xs`}
+      className={`${maxWidth} m-auto rounded-2xl border border-slate-200/90 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-xs`}
     >
-      <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 sm:px-5 py-3 sm:py-3.5">
+      <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5 bg-white">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-          {subtitle && <p className="text-xs text-slate-500 font-mono mt-0.5">{subtitle}</p>}
+          <h2 className="text-sm font-semibold text-slate-900 tracking-tight">{title}</h2>
+          {subtitle && <p className="text-xs text-slate-400 font-mono mt-0.5">{subtitle}</p>}
         </div>
         <button
           type="button"
           aria-label="Tutup"
           onClick={() => ref.current?.close()}
-          className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 active:scale-95 transition-all"
+          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="max-h-[82vh] overflow-y-auto p-4 sm:p-5 text-xs text-slate-700 space-y-3.5">
+      <div className="max-h-[82vh] overflow-y-auto px-5 sm:px-6 py-5 text-xs text-slate-700 divide-y divide-slate-100">
         {children}
       </div>
     </dialog>
@@ -88,9 +88,11 @@ export function DetailSection({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5 space-y-2.5">
-      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{title}</div>
-      <div className="grid grid-cols-2 gap-2.5 text-xs">{children}</div>
+    <div className="pt-4 first:pt-0 space-y-2.5">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        {title}
+      </div>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">{children}</div>
     </div>
   );
 }
@@ -108,8 +110,14 @@ export function DetailItem({
 }) {
   return (
     <div className={span2 ? "col-span-2" : "col-span-1"}>
-      <span className="block text-[11px] font-medium text-slate-500 mb-0.5">{label}</span>
-      <div className={`font-medium ${highlight ? "font-bold text-slate-900 text-sm" : "text-slate-800"}`}>
+      <span className="block text-[11px] font-medium text-slate-500 mb-0.5 leading-tight">
+        {label}
+      </span>
+      <div
+        className={`leading-relaxed ${
+          highlight ? "font-semibold text-slate-900" : "font-normal text-slate-800"
+        }`}
+      >
         {value ?? "-"}
       </div>
     </div>

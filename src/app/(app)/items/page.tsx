@@ -110,16 +110,16 @@ export default async function ItemsPage({ searchParams }: { searchParams: Search
                   </DetailSection>
 
                   <DetailSection title={`Rekapitulasi Stok (Periode: ${ctx.period.periodName})`}>
-                    <DetailItem label="Stok Awal Periode" value={`${num(c.openingStock)} ${c.item.unit}`} />
-                    <DetailItem label="Total Masuk (IN)" value={<span className="text-emerald-700 font-semibold">{c.qtyIn ? `+${num(c.qtyIn)} ${c.item.unit}` : "0"}</span>} />
-                    <DetailItem label="Total Keluar (OUT)" value={<span className="text-rose-700 font-semibold">{c.qtyOut ? `-${num(c.qtyOut)} ${c.item.unit}` : "0"}</span>} />
-                    <DetailItem label="Penyesuaian (Adj)" value={`${c.qtyAdjust ? (c.qtyAdjust > 0 ? "+" : "") + num(c.qtyAdjust) : "0"} ${c.item.unit}`} />
+                    <DetailItem label="Stok Awal Periode" value={<span className="font-mono">{num(c.openingStock)} {c.item.unit}</span>} />
+                    <DetailItem label="Total Masuk (IN)" value={<span className="font-mono text-slate-800">{c.qtyIn ? `+${num(c.qtyIn)} ${c.item.unit}` : "0"}</span>} />
+                    <DetailItem label="Total Keluar (OUT)" value={<span className="font-mono text-slate-800">{c.qtyOut ? `-${num(c.qtyOut)} ${c.item.unit}` : "0"}</span>} />
+                    <DetailItem label="Penyesuaian (Adj)" value={<span className="font-mono">{c.qtyAdjust ? (c.qtyAdjust > 0 ? "+" : "") + num(c.qtyAdjust) : "0"} ${c.item.unit}</span>} />
                     <DetailItem
                       label="Stok Akhir Saat Ini"
-                      value={<span className="text-base font-extrabold text-blue-700">{num(c.closingStock)} {c.item.unit}</span>}
+                      value={<span className="font-semibold font-mono text-slate-900">{num(c.closingStock)} {c.item.unit}</span>}
                       highlight
                     />
-                    <DetailItem label="Batas Stok Minimum" value={`${num(c.item.minStock)} ${c.item.unit}`} />
+                    <DetailItem label="Batas Stok Minimum" value={<span className="font-mono">{num(c.item.minStock)} ${c.item.unit}</span>} />
                     <DetailItem
                       label="Status Ketersediaan"
                       value={<StockBadge stock={c.closingStock} min={c.item.minStock} />}

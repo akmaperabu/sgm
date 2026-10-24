@@ -52,10 +52,14 @@ export function Badge({ tone = "slate", dot = false, children }: { tone?: Tone; 
 const STATUS_TONE: Record<string, Tone> = {
   Complete: "green", Completed: "green", Approved: "green",
   "On Process": "blue", "In Transit": "blue", "In Progress": "blue",
+  "Partially Received": "blue",
   Submitted: "amber", "Pending Approval": "amber", Upcoming: "amber", Open: "amber",
   Rejected: "red", Overdue: "red", Critical: "red", Skipped: "slate",
 };
-const STATUS_LABEL: Record<string, string> = { Upcoming: "Upcoming (H-7)" };
+const STATUS_LABEL: Record<string, string> = {
+  Upcoming: "Upcoming (H-7)",
+  "Partially Received": "Diterima Sebagian",
+};
 
 export function StatusBadge({ status }: { status: string }) {
   return (

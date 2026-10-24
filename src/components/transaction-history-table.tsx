@@ -283,11 +283,11 @@ export function TransactionHistoryTable({
               const isAdj = m.type === "ADJUST";
 
               const detailContent = (
-                <div className="space-y-3.5">
+                <div className="space-y-4">
                   <DetailSection title="Rincian Mutasi Stok">
-                    <DetailItem label="Tanggal & Waktu Transaksi" value={fmtDateTime(m.createdAt)} />
+                    <DetailItem label="Waktu Transaksi" value={fmtDateTime(m.createdAt)} />
                     <DetailItem
-                      label="Tipe Transaksi"
+                      label="Tipe Mutasi"
                       value={
                         isEnter ? (
                           <Badge tone="green" dot>Barang Masuk (IN)</Badge>
@@ -299,32 +299,31 @@ export function TransactionHistoryTable({
                       }
                     />
                     <DetailItem
-                      label="Jumlah Perubahan (Qty)"
+                      label="Jumlah Perubahan"
                       value={
-                        <span className={`text-base font-extrabold ${isEnter ? "text-emerald-700" : isExit ? "text-rose-700" : "text-blue-700"}`}>
+                        <span className="font-semibold font-mono text-slate-900">
                           {isEnter ? `+${num(m.qty)}` : isExit ? `-${num(m.qty)}` : `${m.qty > 0 ? "+" : ""}${num(m.qty)}`} {m.item.unit}
                         </span>
                       }
                     />
                     <DetailItem
                       label="Saldo Stok Setelah Transaksi"
-                      value={<span className="text-base font-extrabold text-slate-900">{num(m.balance)} {m.item.unit}</span>}
-                      highlight
+                      value={<span className="font-semibold font-mono text-slate-900">{num(m.balance)} {m.item.unit}</span>}
                     />
                     <DetailItem label="Site Penempatan" value={siteLabel(m.siteId)} />
-                    <DetailItem label="Operator / Dicatat Oleh" value={m.user ? `${m.user.name} (${m.user.role})` : "-"} />
+                    <DetailItem label="Operator / Petugas" value={m.user ? `${m.user.name} (${m.user.role})` : "-"} />
                   </DetailSection>
 
                   <DetailSection title="Data Barang Terkait">
                     <DetailItem label="Nama Barang" value={m.item.name} highlight span2 />
-                    <DetailItem label="Kode Barang" value={<span className="font-mono text-xs">{m.item.code}</span>} />
+                    <DetailItem label="Kode Barang" value={<span className="font-mono text-slate-700">{m.item.code}</span>} />
                     <DetailItem label="Kategori" value={categoryLabel(m.item.category)} />
                     <DetailItem label="Satuan Unit" value={m.item.unit} />
                   </DetailSection>
 
                   <DetailSection title="Referensi Dokumen & Keterangan">
                     <DetailItem label="Tipe Referensi" value={m.refType || "-"} />
-                    <DetailItem label="Nomor Dokumen / Ref" value={<span className="font-mono font-bold text-slate-900">{m.refNo || "-"}</span>} />
+                    <DetailItem label="Nomor Dokumen / Ref" value={<span className="font-mono text-slate-800">{m.refNo || "-"}</span>} />
                     <DetailItem label="Catatan Transaksi" value={m.note || "-"} span2 />
                   </DetailSection>
                 </div>

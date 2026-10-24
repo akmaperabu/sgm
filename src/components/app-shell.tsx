@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, ArrowDownToLine, ArrowUpFromLine, RefreshCw, Archive,
   SlidersHorizontal, Wrench, Siren, CalendarClock, Factory, Settings, Menu, X, LogOut,
-  Search, MapPin, History, Activity
+  Search, MapPin, History, Activity, Building2
 } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { SITES } from "@/lib/constants";
@@ -27,6 +27,7 @@ const NAV: Group[] = [
       { href: "/purchasing", label: "Pembelian (PR/PO)", icon: RefreshCw },
       { href: "/transactions", label: "Riwayat Transaksi", icon: History },
       { href: "/items", label: "Master Barang", icon: Archive },
+      { href: "/vendors", label: "Master Vendor", icon: Building2 },
       { href: "/stock-adjustment", label: "Stock Adjustment", icon: SlidersHorizontal, adminOnly: true },
     ],
   },

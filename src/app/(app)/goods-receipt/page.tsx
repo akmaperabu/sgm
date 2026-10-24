@@ -4,7 +4,8 @@ import { PageHeader, Panel } from "@/components/page-header";
 import { FormDialog } from "@/components/form-dialog";
 import { ItemSearchSelect } from "@/components/item-search-select";
 import { Badge, Empty, Field, btnPrimary, inputCls, selectCls, stickyTd, stickyTh, table, tableWrap, td, th } from "@/components/ui";
-import { ITEM_CATEGORIES, siteLabel } from "@/lib/constants";
+import { PrintSlipDialog } from "@/components/print-slip-dialog";
+import { categoryLabel, ITEM_CATEGORIES, siteLabel } from "@/lib/constants";
 import { fmtDate, fmtDateTime, num } from "@/lib/format";
 import { advancePurchase, receiveManual } from "@/actions/goods";
 
@@ -14,7 +15,7 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
 
   const [transit, moves, items] = await Promise.all([
     prisma.purchaseRequest.findMany({
-      where: { ...ctx.siteWhere, status: "In Transit" },
+      where: { ...ctx.siteWhere, status: { in: ["In Transit", "Partially Received"] } },
       include: { item: true },
       orderBy: { eta: "asc" },
     }),
@@ -81,12 +82,16 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
               <tbody>
                 {transit.map((p) => {
                   const isNewWithoutMaster = p.isNewItem && !p.itemId;
+                  const remaining = Math.max(0, p.qty - p.receivedQty);
+                  const isPartial = p.status === "Partially Received" || (p.receivedQty > 0 && p.receivedQty < p.qty);
+
                   return (
                     <tr key={p.id} className="group hover:bg-slate-50/70 transition-colors">
                       <td className={`${td} ${stickyTd}`}>
                         <div className="font-semibold text-slate-900 flex items-center gap-2">
                           <span>{p.item?.name ?? p.newItemName}</span>
                           {isNewWithoutMaster && <Badge tone="blue">Barang Baru</Badge>}
+                          {isPartial && <Badge tone="amber">Diterima {num(p.receivedQty)}/{num(p.qty)}</Badge>}
                         </div>
                         {isNewWithoutMaster && (
                           <div className="text-[11px] text-slate-400 mt-0.5 font-mono">
@@ -107,14 +112,21 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                       <td className={`${td} font-mono text-xs font-semibold text-slate-700`}>{p.prNumber}</td>
                       <td className={`${td} font-mono text-xs text-slate-500`}>{p.poNumber ?? "-"}</td>
                       <td className={td}>{siteLabel(p.siteId)}</td>
-                      <td className={`${td} text-right font-mono font-semibold text-slate-900`}>{num(p.qty)}</td>
+                      <td className={`${td} text-right font-mono text-xs`}>
+                        <div className="font-bold text-slate-900">{num(p.qty)}</div>
+                        {isPartial && (
+                          <div className="text-[11px] text-amber-700 font-medium">
+                            Sisa: {num(remaining)}
+                          </div>
+                        )}
+                      </td>
                       <td className={`${td} font-mono text-xs text-slate-500`}>{p.trackingNo ?? "-"}</td>
                       <td className={`${td} font-mono text-xs text-slate-500`}>{fmtDate(p.eta)}</td>
                       {ctx.isAdmin && (
                         <td className={td}>
                           {isNewWithoutMaster ? (
                             <FormDialog
-                              label="Registrasi & Terima"
+                              label={isPartial ? "Terima Sisa" : "Registrasi & Terima"}
                               title={`Registrasi & Terima Barang Baru (${p.prNumber})`}
                               small
                               icon={false}
@@ -172,12 +184,13 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                                       placeholder="pcs, box, set, liter..."
                                     />
                                   </Field>
-                                  <Field label="Jumlah Fisik Diterima">
+                                  <Field label={`Jumlah Fisik Diterima (Sisa: ${remaining})`}>
                                     <input
                                       name="receivedQty"
                                       type="number"
                                       min={1}
-                                      defaultValue={p.qty}
+                                      max={remaining}
+                                      defaultValue={remaining}
                                       required
                                       className={`${inputCls} font-mono`}
                                     />
@@ -210,11 +223,15 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                                 name="receivedQty"
                                 type="number"
                                 min={1}
-                                defaultValue={p.qty}
+                                max={remaining}
+                                defaultValue={remaining}
                                 aria-label="Jumlah diterima"
+                                title={`Maksimal sisa: ${remaining}`}
                                 className={`${inputCls} !h-8 !w-20 font-mono`}
                               />
-                              <button className={`${btnPrimary} !h-8 !px-3 !text-xs`}>Terima</button>
+                              <button className={`${btnPrimary} !h-8 !px-3 !text-xs`}>
+                                {isPartial ? "Terima Sisa" : "Terima"}
+                              </button>
                             </form>
                           )}
                         </td>
@@ -240,6 +257,7 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                   <th className={`${th} text-right`}>Saldo</th>
                   <th className={th}>Referensi</th>
                   <th className={th}>Catatan</th>
+                  <th className={th}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,9 +270,44 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                     <td className={`${td} text-right font-mono font-medium text-slate-900`}>{num(m.balance)}</td>
                     <td className={`${td} font-mono text-xs text-slate-500`}>{m.refType}{m.refNo ? ` / ${m.refNo}` : ""}</td>
                     <td className={td}>{m.note ?? "-"}</td>
+                    <td className={td}>
+                      <PrintSlipDialog
+                        triggerLabel="Cetak Bukti"
+                        iconOnly
+                        detail={{
+                          docNumber: m.refNo ?? `GR-${m.id.slice(-6).toUpperCase()}`,
+                          docTitle: "BUKTI PENERIMAAN BARANG FISIK (GOODS RECEIPT SLIP)",
+                          date: fmtDateTime(m.createdAt),
+                          siteName: siteLabel(m.siteId),
+                          requesterOrVendorLabel: "Referensi Pengiriman",
+                          requesterOrVendorValue: `${m.refType}${m.refNo ? ` - ${m.refNo}` : ""}`,
+                          officerName: "Petugas Gudang SGM",
+                          purposeOrRefLabel: "Keterangan Penerimaan",
+                          purposeOrRefValue: m.note ?? "Penerimaan fisik barang gudang",
+                          items: [
+                            {
+                              code: m.item.code,
+                              name: m.item.name,
+                              category: categoryLabel(m.item.category),
+                              unit: m.item.unit,
+                              qty: m.qty,
+                            },
+                          ],
+                          notes: "Barang telah diterima dan diverifikasi sesuai Surat Jalan/PO fisik.",
+                          signatures: {
+                            firstTitle: "Diserahkan Oleh (Vendor/Driver)",
+                            firstName: "(.............................)",
+                            secondTitle: "Diterima Oleh (Gudang)",
+                            secondName: "Staff Gudang",
+                            thirdTitle: "Mengetahui (Supervisor)",
+                            thirdName: "Supervisor Logistik",
+                          },
+                        }}
+                      />
+                    </td>
                   </tr>
                 ))}
-                {!moves.length && <Empty cols={7} text="Belum ada barang masuk pada periode ini." />}
+                {!moves.length && <Empty cols={8} text="Belum ada barang masuk pada periode ini." />}
               </tbody>
             </table>
           </div>

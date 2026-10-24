@@ -8,7 +8,8 @@ import { Empty, Field, StatusBadge, btnDanger, btnPrimary, inputCls, selectCls, 
 import { categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDateTime, num } from "@/lib/format";
 import { decideIssue, requestIssue } from "@/actions/goods";
-import { Eye } from "lucide-react";
+import { PrintSlipDialog } from "@/components/print-slip-dialog";
+import { Eye, Printer } from "lucide-react";
 
 export default async function GoodsIssuePage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -126,7 +127,7 @@ export default async function GoodsIssuePage({ searchParams }: { searchParams: S
                     <DetailItem label="Kategori" value={categoryLabel(g.item.category)} />
                     <DetailItem
                       label="Jumlah Diminta"
-                      value={<span className="text-base font-extrabold text-blue-700">{num(g.qty)} {g.item.unit}</span>}
+                      value={<span className="font-semibold font-mono text-slate-900">{num(g.qty)} {g.item.unit}</span>}
                       highlight
                     />
                     <DetailItem label="Stok Gudang Saat Ini" value={`${num(g.item.currentStock)} ${g.item.unit}`} />
@@ -181,6 +182,41 @@ export default async function GoodsIssuePage({ searchParams }: { searchParams: S
                       >
                         {detailContent}
                       </ViewDetailDialog>
+
+                      {g.status === "Approved" && (
+                        <PrintSlipDialog
+                          triggerLabel="Cetak Bukti"
+                          detail={{
+                            docNumber: g.number,
+                            docTitle: "BUKTI PENGELUARAN BARANG GUDANG (GOODS ISSUE SLIP)",
+                            date: fmtDateTime(g.createdAt),
+                            siteName: siteLabel(g.siteId),
+                            requesterOrVendorLabel: "Pemohon / Penerima",
+                            requesterOrVendorValue: g.requester.name,
+                            officerName: "Petugas Gudang SGM",
+                            purposeOrRefLabel: "Keperluan",
+                            purposeOrRefValue: g.ticket ? `${g.purpose} (Tiket: ${g.ticket.number})` : g.purpose,
+                            items: [
+                              {
+                                code: g.item.code,
+                                name: g.item.name,
+                                category: categoryLabel(g.item.category),
+                                unit: g.item.unit,
+                                qty: g.qty,
+                              },
+                            ],
+                            notes: g.ticket ? `Terkait tiket perbaikan alat: ${g.ticket.number}` : null,
+                            signatures: {
+                              firstTitle: "Diserahkan Oleh (Gudang)",
+                              firstName: "Petugas Gudang",
+                              secondTitle: "Diterima Oleh (Teknisi)",
+                              secondName: g.requester.name,
+                              thirdTitle: "Mengetahui (Supervisor)",
+                              thirdName: "Supervisor Operasional",
+                            },
+                          }}
+                        />
+                      )}
 
                       {ctx.isAdmin && !ctx.readOnly && g.status === "Pending Approval" && (
                         <>
