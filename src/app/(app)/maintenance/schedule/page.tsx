@@ -35,7 +35,6 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Jadwal Perbaikan"
       />
 

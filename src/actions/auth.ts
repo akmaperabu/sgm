@@ -9,10 +9,17 @@ import { createSession, destroySession, requireUser } from "@/lib/auth";
 import { SITES } from "@/lib/constants";
 
 export async function loginAction(_prev: { error?: string } | undefined, fd: FormData) {
-  const email = String(fd.get("email") ?? "").trim();
+  const email = String(fd.get("email") ?? "").trim().toLowerCase();
   const password = String(fd.get("password") ?? "");
-  // email dicocokkan tanpa membedakan huruf besar/kecil (tabel user kecil)
-  const u = (await prisma.user.findMany()).find((x) => x.email.toLowerCase() === email.toLowerCase());
+  if (!email || !password) return { error: "Email dan password wajib diisi." };
+
+  let u = await prisma.user.findUnique({ where: { email } });
+  if (!u) {
+    // Fallback case-insensitive untuk SQLite bila ada email huruf besar di DB
+    const all = await prisma.user.findMany();
+    u = all.find((x) => x.email.toLowerCase() === email) ?? null;
+  }
+
   if (!u || !u.isActive || !(await bcrypt.compare(password, u.passwordHash)))
     return { error: "Email atau password salah." };
   await createSession(u.id);
@@ -30,9 +37,7 @@ export async function registerAction(_prev: { error?: string } | undefined, fd: 
   if (password.length < 6) return { error: "Password minimal 6 karakter." };
   if (!SITES.some((s) => s.id === siteId)) return { error: "Pilih site penempatan yang valid." };
 
-  const exists = (await prisma.user.findMany({ select: { email: true } })).some(
-    (u) => u.email.toLowerCase() === email
-  );
+  const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (exists) return { error: "Email sudah terdaftar. Silakan gunakan email lain atau login." };
 
   const passwordHash = await bcrypt.hash(password, 10);

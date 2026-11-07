@@ -1,14 +1,11 @@
 import Link from "next/link";
-import {
-  Package, Boxes, Wrench, Truck, ArrowUpRight, CheckCircle2
-} from "lucide-react";
+import { Wrench, ArrowUpRight } from "lucide-react";
 import { getCtx, type SearchParams } from "@/lib/context";
 import { prisma } from "@/lib/db";
+import { PageHeader } from "@/components/page-header";
 import { Badge, Empty, StatusBadge, StockBadge, table, tableWrap, td, th } from "@/components/ui";
 import { assetCategoryLabel, categoryLabel, siteLabel } from "@/lib/constants";
-import { daysBetween, fmtDate, num, periodLabel } from "@/lib/format";
-import { PeriodSelector } from "@/components/period-selector";
-import { Suspense } from "react";
+import { daysBetween, fmtDate, num } from "@/lib/format";
 
 export default async function Dashboard({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -42,22 +39,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Search
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Dashboard Overview</h1>
-        </div>
-        <Suspense fallback={null}>
-          <PeriodSelector
-            isAdmin={ctx.isAdmin}
-            current={ctx.period.periodName}
-            periods={ctx.periods.map((p) => ({
-              periodName: p.periodName,
-              label: periodLabel(p.periodName),
-              isActive: p.isActive,
-            }))}
-          />
-        </Suspense>
-      </div>
+      <PageHeader ctx={ctx} title="Dashboard Overview" />
 
       <section className="space-y-3">
         <div className="grid gap-3 sm:gap-4 md:grid-cols-3">

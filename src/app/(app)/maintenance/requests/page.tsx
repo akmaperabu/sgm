@@ -10,6 +10,7 @@ import { fmtDate, fmtDateTime } from "@/lib/format";
 import { handleRepair, requestRepair } from "@/actions/maintenance";
 import { Camera, CheckCircle2, Wrench, XCircle, Eye } from "lucide-react";
 import { ImageUploadInput } from "@/components/image-upload-input";
+import { ImagePreviewDialog } from "@/components/image-preview-dialog";
 
 const urgTone = { Low: "slate", Medium: "blue", High: "amber", Critical: "red" } as const;
 
@@ -33,15 +34,14 @@ export default async function RepairRequestsPage({ searchParams }: { searchParam
   const assets = ctx.readOnly
     ? []
     : await prisma.asset.findMany({
-        where: { ...ctx.siteWhere, isActive: true },
-        orderBy: [{ siteId: "asc" }, { category: "asc" }, { code: "asc" }],
-      });
+      where: { ...ctx.siteWhere, isActive: true },
+      orderBy: [{ siteId: "asc" }, { category: "asc" }, { code: "asc" }],
+    });
 
   return (
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Request Perbaikan"
         actions={
           !ctx.readOnly ? (
@@ -79,7 +79,7 @@ export default async function RepairRequestsPage({ searchParams }: { searchParam
                 </Field>
                 <ImageUploadInput label="Foto Kerusakan (opsional)" name="photo" />
                 <div className="pt-2">
-                  <button className={btnPrimary}>Kirim Request</button>
+                  <button disabled={assets.length === 0} className={btnPrimary}>Kirim Request</button>
                 </div>
               </form>
             </FormDialog>
@@ -123,9 +123,15 @@ export default async function RepairRequestsPage({ searchParams }: { searchParam
                       <DetailItem
                         label="Dokumentasi Kerusakan"
                         value={
-                          <a href={t.photoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 underline font-medium">
-                            <Camera className="h-3.5 w-3.5" /> Buka Foto Kerusakan
-                          </a>
+                          <ImagePreviewDialog
+                            src={t.photoUrl}
+                            title={`Foto Kerusakan: ${t.number}`}
+                            trigger={
+                              <span className="inline-flex items-center gap-1 text-blue-700 underline font-medium">
+                                <Camera className="h-3.5 w-3.5" /> Lihat Foto Kerusakan
+                              </span>
+                            }
+                          />
                         }
                         span2
                       />
@@ -171,15 +177,18 @@ export default async function RepairRequestsPage({ searchParams }: { searchParam
                   <td className={`${td} max-w-72`}>
                     <div className="text-slate-800 leading-relaxed">{t.description}</div>
                     {t.photoUrl && (
-                      <a
-                        href={t.photoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 mt-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-slate-50 transition-colors shadow-2xs"
-                      >
-                        <Camera className="h-3 w-3" />
-                        <span>Lihat Foto Kerusakan</span>
-                      </a>
+                      <div className="mt-1.5">
+                        <ImagePreviewDialog
+                          src={t.photoUrl}
+                          title={`Foto Kerusakan: ${t.number}`}
+                          trigger={
+                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-slate-50 transition-colors shadow-2xs">
+                              <Camera className="h-3 w-3" />
+                              <span>Lihat Foto Kerusakan</span>
+                            </span>
+                          }
+                        />
+                      </div>
                     )}
                     {t.resolution && <div className="text-xs text-slate-500 mt-1">Hasil: {t.resolution}</div>}
                   </td>

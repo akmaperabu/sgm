@@ -10,14 +10,12 @@ export function PageHeader({
   desc,
   actions,
   showPeriod = true,
-  sp = {},
 }: {
   ctx: Ctx;
   title: string;
   desc?: string;
   actions?: ReactNode;
   showPeriod?: boolean;
-  sp?: Record<string, string | undefined>;
 }) {
   return (
     <div className="mb-4 sm:mb-6">

@@ -4,19 +4,17 @@ import { useEffect, useState, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 
-export function ToastNotification({ err, ok }: { err?: string; ok?: string }) {
+export function ToastNotification() {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
 
   const queryErr = sp.get("err") || undefined;
   const queryOk = sp.get("ok") || undefined;
-  const initialErr = err ?? queryErr;
-  const initialOk = ok ?? queryOk;
 
-  const [visible, setVisible] = useState(Boolean(initialErr || initialOk));
-  const [currentErr, setCurrentErr] = useState<string | undefined>(initialErr);
-  const [currentOk, setCurrentOk] = useState<string | undefined>(initialOk);
+  const [visible, setVisible] = useState(Boolean(queryErr || queryOk));
+  const [currentErr, setCurrentErr] = useState<string | undefined>(queryErr);
+  const [currentOk, setCurrentOk] = useState<string | undefined>(queryOk);
 
   const closeToast = useCallback(() => {
     setVisible(false);
@@ -30,8 +28,8 @@ export function ToastNotification({ err, ok }: { err?: string; ok?: string }) {
   }, [pathname, router, sp]);
 
   useEffect(() => {
-    const nextErr = err ?? sp.get("err") ?? undefined;
-    const nextOk = ok ?? sp.get("ok") ?? undefined;
+    const nextErr = sp.get("err") ?? undefined;
+    const nextOk = sp.get("ok") ?? undefined;
     if (nextErr || nextOk) {
       setCurrentErr(nextErr);
       setCurrentOk(nextOk);
@@ -41,7 +39,7 @@ export function ToastNotification({ err, ok }: { err?: string; ok?: string }) {
       }, 4500);
       return () => clearTimeout(timer);
     }
-  }, [err, ok, sp, closeToast]);
+  }, [sp, closeToast]);
 
   if (!visible || (!currentErr && !currentOk)) return null;
 

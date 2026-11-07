@@ -9,7 +9,7 @@ import { categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDateTime, num } from "@/lib/format";
 import { decideIssue, requestIssue } from "@/actions/goods";
 import { PrintSlipDialog } from "@/components/print-slip-dialog";
-import { Eye, Printer } from "lucide-react";
+import { Eye } from "lucide-react";
 
 export default async function GoodsIssuePage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -27,15 +27,14 @@ export default async function GoodsIssuePage({ searchParams }: { searchParams: S
   const [items, tickets] = ctx.readOnly
     ? [[], []]
     : await Promise.all([
-        prisma.inventoryItem.findMany({ where: { ...ctx.siteWhere, isActive: true, currentStock: { gt: 0 } }, orderBy: [{ siteId: "asc" }, { name: "asc" }] }),
-        prisma.maintenanceTicket.findMany({ where: { ...ctx.siteWhere, status: { in: ["Open", "In Progress", "Upcoming"] } }, include: { asset: true }, orderBy: { createdAt: "desc" } }),
-      ]);
+      prisma.inventoryItem.findMany({ where: { ...ctx.siteWhere, isActive: true, currentStock: { gt: 0 } }, orderBy: [{ siteId: "asc" }, { name: "asc" }] }),
+      prisma.maintenanceTicket.findMany({ where: { ...ctx.siteWhere, status: { in: ["Open", "In Progress", "Upcoming"] } }, include: { asset: true }, orderBy: { createdAt: "desc" } }),
+    ]);
 
   return (
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Pengambilan Barang (Goods Issue)"
         desc="Request ambil barang gudang. Stok terpotong otomatis saat Admin menyetujui."
         actions={
@@ -80,7 +79,7 @@ export default async function GoodsIssuePage({ searchParams }: { searchParams: S
                   <textarea name="purpose" required rows={2} className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/15" placeholder="cth: Penggantian seal oli kompresor oksigen..." />
                 </Field>
                 <div className="pt-2">
-                  <button className={btnPrimary}>Ajukan Request</button>
+                  <button disabled={items.length === 0} className={btnPrimary}>Ajukan Request</button>
                 </div>
               </form>
             </FormDialog>
@@ -207,11 +206,11 @@ export default async function GoodsIssuePage({ searchParams }: { searchParams: S
                             ],
                             notes: g.ticket ? `Terkait tiket perbaikan alat: ${g.ticket.number}` : null,
                             signatures: {
-                              firstTitle: "Diserahkan Oleh (Gudang)",
+                              firstTitle: "Diserahkan Oleh",
                               firstName: "Petugas Gudang",
-                              secondTitle: "Diterima Oleh (Teknisi)",
-                              secondName: g.requester.name,
-                              thirdTitle: "Mengetahui (Supervisor)",
+                              secondTitle: "Diterima Oleh",
+                              secondName: `${g.requester.name} (Teknisi)`,
+                              thirdTitle: "Mengetahui",
                               thirdName: "Supervisor Operasional",
                             },
                           }}

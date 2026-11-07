@@ -4,11 +4,40 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { requireAdmin, requireUser } from "@/lib/auth";
 import { nextNumber, ensureActivePeriod } from "@/lib/period";
-import { advanceDue } from "@/lib/maintenance";
+import { advanceDue, syncPreventiveTickets } from "@/lib/maintenance";
 import { firstOccurrence } from "@/lib/format";
 import { int, opt, req, run, str } from "@/lib/action-utils";
 import { ASSET_CATEGORIES, SITES, URGENCIES } from "@/lib/constants";
 import { saveUploadedFile } from "@/lib/upload";
+
+async function syncAssetScheduleChange(assetId: string, intervalMonths: number, scheduleDay: number) {
+  const newDue = firstOccurrence(new Date(), scheduleDay);
+  const open = await prisma.maintenanceTicket.findFirst({
+    where: { assetId, type: "PREVENTIVE", status: "Upcoming" },
+  });
+
+  if (open) {
+    await prisma.$transaction([
+      prisma.asset.update({
+        where: { id: assetId },
+        data: { intervalMonths, scheduleDay, nextDueDate: newDue },
+      }),
+      prisma.maintenanceTicket.update({
+        where: { id: open.id },
+        data: {
+          dueDate: newDue,
+          description: `Maintenance rutin tiap ${intervalMonths} bulan (tanggal ${scheduleDay}).`,
+        },
+      }),
+    ]);
+  } else {
+    await prisma.asset.update({
+      where: { id: assetId },
+      data: { intervalMonths, scheduleDay, nextDueDate: newDue },
+    });
+  }
+  await syncPreventiveTickets();
+}
 
 // Corrective Maintenance
 export async function requestRepair(fd: FormData) {
@@ -104,11 +133,7 @@ export async function updateSchedule(fd: FormData) {
     const scheduleDay = int(fd, "scheduleDay", "Tanggal");
     if (intervalMonths < 1 || intervalMonths > 24) throw new Error("Interval 1-24 bulan.");
     if (scheduleDay < 1 || scheduleDay > 31) throw new Error("Tanggal 1-31.");
-    const open = await prisma.maintenanceTicket.findFirst({ where: { assetId: asset.id, type: "PREVENTIVE", status: "Upcoming" } });
-    await prisma.asset.update({
-      where: { id: asset.id },
-      data: { intervalMonths, scheduleDay, ...(open ? {} : { nextDueDate: firstOccurrence(new Date(), scheduleDay) }) },
-    });
+    await syncAssetScheduleChange(asset.id, intervalMonths, scheduleDay);
   }, "Pengaturan jadwal disimpan.");
 }
 
@@ -126,10 +151,12 @@ export async function saveAsset(fd: FormData) {
     const lifespanMonths = opt(fd, "lifespanMonths") ? int(fd, "lifespanMonths", "Target masa pakai") : null;
 
     if (id) {
-      const intervalMonths = opt(fd, "intervalMonths") ? int(fd, "intervalMonths", "Interval bulan") : undefined;
-      const scheduleDay = opt(fd, "scheduleDay") ? int(fd, "scheduleDay", "Tanggal") : undefined;
-      if (intervalMonths !== undefined && (intervalMonths < 1 || intervalMonths > 24)) throw new Error("Interval 1-24 bulan.");
-      if (scheduleDay !== undefined && (scheduleDay < 1 || scheduleDay > 31)) throw new Error("Tanggal 1-31.");
+      const existing = await prisma.asset.findUniqueOrThrow({ where: { id } });
+      const intervalMonths = opt(fd, "intervalMonths") ? int(fd, "intervalMonths", "Interval bulan") : existing.intervalMonths;
+      const scheduleDay = opt(fd, "scheduleDay") ? int(fd, "scheduleDay", "Tanggal") : existing.scheduleDay;
+      if (intervalMonths < 1 || intervalMonths > 24) throw new Error("Interval 1-24 bulan.");
+      if (scheduleDay < 1 || scheduleDay > 31) throw new Error("Tanggal 1-31.");
+
       await prisma.asset.update({
         where: { id },
         data: {
@@ -137,10 +164,12 @@ export async function saveAsset(fd: FormData) {
           category,
           purchaseDate,
           lifespanMonths,
-          ...(intervalMonths !== undefined ? { intervalMonths } : {}),
-          ...(scheduleDay !== undefined ? { scheduleDay } : {}),
         },
       });
+
+      if (intervalMonths !== existing.intervalMonths || scheduleDay !== existing.scheduleDay) {
+        await syncAssetScheduleChange(id, intervalMonths, scheduleDay);
+      }
       return;
     }
     const siteId = req(fd, "siteId", "Site");
@@ -149,7 +178,7 @@ export async function saveAsset(fd: FormData) {
     if (await prisma.asset.findUnique({ where: { siteId_code: { siteId, code } } })) throw new Error(`Kode ${code} sudah dipakai di site tersebut.`);
     const intervalMonths = int(fd, "intervalMonths", "Interval bulan");
     const scheduleDay = int(fd, "scheduleDay", "Tanggal");
-    if (intervalMonths < 1 || scheduleDay < 1 || scheduleDay > 31) throw new Error("Interval/tanggal tidak valid.");
+    if (intervalMonths < 1 || intervalMonths > 24 || scheduleDay < 1 || scheduleDay > 31) throw new Error("Interval/tanggal tidak valid.");
     await prisma.asset.create({
       data: {
         siteId,
@@ -163,6 +192,7 @@ export async function saveAsset(fd: FormData) {
         nextDueDate: firstOccurrence(new Date(), scheduleDay),
       },
     });
+    await syncPreventiveTickets();
   });
 }
 
@@ -206,7 +236,7 @@ export async function createUser(fd: FormData) {
     if (siteId && !SITES.some((s) => s.id === siteId)) throw new Error("Site tidak valid.");
     const password = req(fd, "password", "Password");
     if (password.length < 6) throw new Error("Password minimal 6 karakter.");
-    const exists = (await prisma.user.findMany({ select: { email: true } })).some((u) => u.email.toLowerCase() === email);
+    const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
     if (exists) throw new Error("Email sudah terdaftar.");
     await prisma.user.create({
       data: { name: req(fd, "name", "Nama"), email, passwordHash: await bcrypt.hash(password, 10), role, siteId },

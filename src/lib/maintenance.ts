@@ -6,17 +6,29 @@ import { ensureActivePeriod, nextNumber } from "./period";
 
 /**
  * Reminder H-7: tiket rutin (PREVENTIVE) otomatis dibuat 7 hari sebelum jatuh tempo.
- * Idempotent berkat unique (assetId, type, dueDate).
+ * Idempotent berkat unique (assetId, type, dueDate) dan hanya mengambil aset yang sudah masuk H-7.
  */
 export async function syncPreventiveTickets(now = new Date()) {
   const period = await ensureActivePeriod(now);
   const today = startOfDay(now);
-  const assets = await prisma.asset.findMany({ where: { isActive: true } });
-  for (const a of assets) {
-    if (today < addDays(a.nextDueDate, -REMINDER_DAYS)) continue;
-    const exists = await prisma.maintenanceTicket.findFirst({
-      where: { assetId: a.id, type: "PREVENTIVE", dueDate: a.nextDueDate },
-    });
+  const threshold = addDays(today, REMINDER_DAYS);
+
+  const dueAssets = await prisma.asset.findMany({
+    where: {
+      isActive: true,
+      nextDueDate: { lte: threshold },
+    },
+    include: {
+      tickets: {
+        where: { type: "PREVENTIVE" },
+        select: { dueDate: true },
+      },
+    },
+  });
+
+  for (const a of dueAssets) {
+    const dueTime = a.nextDueDate.getTime();
+    const exists = a.tickets.some((t) => t.dueDate?.getTime() === dueTime);
     if (exists) continue;
     try {
       await prisma.maintenanceTicket.create({

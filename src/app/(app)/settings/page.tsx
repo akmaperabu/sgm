@@ -8,9 +8,7 @@ import {
   Badge,
   Empty,
   Field,
-  btnDanger,
   btnPrimary,
-  btnSecondary,
   inputCls,
   selectCls,
   table,
@@ -21,7 +19,7 @@ import {
 import { SITES, siteLabel } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
 import { createUser, toggleUser, updateUser, resetPassword } from "@/actions/maintenance";
-import { KeyRound, Pencil, Power, UserCog, UserPlus, Users } from "lucide-react";
+import { KeyRound, Pencil, Power } from "lucide-react";
 
 export default async function SettingsPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAdmin();
@@ -36,7 +34,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
+        showPeriod={false}
         title="Pengaturan Pengguna"
         actions={
           <FormDialog label="Tambah Pengguna" title="Registrasi Akun Baru">
@@ -264,11 +262,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
                               <input type="hidden" name="id" value={u.id} />
                               <button
                                 type="submit"
-                                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                                  u.isActive
+                                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${u.isActive
                                     ? "text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                                     : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                                }`}
+                                  }`}
                               >
                                 <Power className="h-3.5 w-3.5 shrink-0" />
                                 <span>{u.isActive ? "Nonaktifkan Akun" : "Aktifkan Akun"}</span>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Download, Search, ChevronLeft, ChevronRight, ArrowDownRight, ArrowUpRight, SlidersHorizontal, RefreshCw, Eye } from "lucide-react";
-import { Badge, Empty, btnPrimary, btnSecondary, inputCls, selectCls, table, tableWrap, td, th } from "./ui";
+import { Download, Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Badge, Empty, btnSecondary, inputCls, selectCls, table, tableWrap, td, th } from "./ui";
 import { ViewDetailDialog, DetailSection, DetailItem } from "./view-detail-dialog";
 import { categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDateTime, num } from "@/lib/format";
@@ -158,9 +158,8 @@ export function TransactionHistoryTable({
                   setTypeFilter("ALL");
                   setCurrentPage(1);
                 }}
-                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                  typeFilter === "ALL" ? "bg-white text-slate-900 shadow-xs font-semibold" : "text-slate-600 hover:text-slate-900"
-                }`}
+                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${typeFilter === "ALL" ? "bg-white text-slate-900 shadow-xs font-semibold" : "text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 Semua
               </button>
@@ -170,9 +169,8 @@ export function TransactionHistoryTable({
                   setTypeFilter("IN");
                   setCurrentPage(1);
                 }}
-                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                  typeFilter === "IN" ? "bg-white text-emerald-700 shadow-xs font-semibold" : "text-slate-600 hover:text-emerald-700"
-                }`}
+                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${typeFilter === "IN" ? "bg-white text-emerald-700 shadow-xs font-semibold" : "text-slate-600 hover:text-emerald-700"
+                  }`}
               >
                 Masuk
               </button>
@@ -182,9 +180,8 @@ export function TransactionHistoryTable({
                   setTypeFilter("OUT");
                   setCurrentPage(1);
                 }}
-                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                  typeFilter === "OUT" ? "bg-white text-rose-700 shadow-xs font-semibold" : "text-slate-600 hover:text-rose-700"
-                }`}
+                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${typeFilter === "OUT" ? "bg-white text-rose-700 shadow-xs font-semibold" : "text-slate-600 hover:text-rose-700"
+                  }`}
               >
                 Keluar
               </button>
@@ -194,9 +191,8 @@ export function TransactionHistoryTable({
                   setTypeFilter("ADJUST");
                   setCurrentPage(1);
                 }}
-                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                  typeFilter === "ADJUST" ? "bg-white text-blue-700 shadow-xs font-semibold" : "text-slate-600 hover:text-blue-700"
-                }`}
+                className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${typeFilter === "ADJUST" ? "bg-white text-blue-700 shadow-xs font-semibold" : "text-slate-600 hover:text-blue-700"
+                  }`}
               >
                 Penyesuaian
               </button>
@@ -234,11 +230,10 @@ export function TransactionHistoryTable({
                       setPageSize(size as number | "ALL");
                       setCurrentPage(1);
                     }}
-                    className={`rounded-lg px-2 sm:px-2 py-1 text-xs font-semibold transition-colors ${
-                      active
+                    className={`rounded-lg px-2 sm:px-2 py-1 text-xs font-semibold transition-colors ${active
                         ? "bg-white text-blue-700 shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     {size === "ALL" ? "All" : size}
                   </button>
@@ -415,8 +410,8 @@ export function TransactionHistoryTable({
             {totalItems === 0
               ? 0
               : isAll
-              ? `1 - ${totalItems}`
-              : `${(safePage - 1) * limit + 1} - ${Math.min(safePage * limit, totalItems)}`}
+                ? `1 - ${totalItems}`
+                : `${(safePage - 1) * limit + 1} - ${Math.min(safePage * limit, totalItems)}`}
           </strong>{" "}
           dari <strong className="text-slate-800">{totalItems}</strong> transaksi
         </div>
@@ -452,11 +447,10 @@ export function TransactionHistoryTable({
                       <button
                         type="button"
                         onClick={() => setCurrentPage(p)}
-                        className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-semibold transition-all ${
-                          isCur
+                        className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-semibold transition-all ${isCur
                             ? "bg-blue-700 text-white shadow-xs"
                             : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>

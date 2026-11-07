@@ -1,8 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { requireUser } from "./auth";
-import { prisma } from "./db";
-import { ensureActivePeriod } from "./period";
+import { ensureActivePeriod, getPeriods } from "./period";
 import { SITES } from "./constants";
 
 export type SearchParams = Promise<Record<string, string | undefined>>;
@@ -12,9 +11,11 @@ export type SearchParams = Promise<Record<string, string | undefined>>;
  * dan periode (USER hanya periode aktif, ADMIN bisa membuka arsip via ?period=YYYY-MM).
  */
 export async function getCtx(sp: Record<string, string | undefined> = {}) {
-  const user = await requireUser();
-  const active = await ensureActivePeriod();
-  const periods = await prisma.period.findMany({ orderBy: { startDate: "desc" } });
+  const [user, active, periods] = await Promise.all([
+    requireUser(),
+    ensureActivePeriod(),
+    getPeriods(),
+  ]);
 
   const isAdmin = user.role === "ADMIN";
   let period = active;

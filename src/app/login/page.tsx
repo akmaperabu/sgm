@@ -8,7 +8,6 @@ import { Eye, EyeOff, AlertCircle, Info, X } from "lucide-react";
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, undefined);
@@ -18,37 +17,41 @@ export default function LoginPage() {
   const isPending = mode === "login" ? loginPending : registerPending;
 
   return (
-    <main className="min-h-screen w-full bg-white text-slate-900 antialiased font-sans flex flex-col lg:flex-row">
-      {/* SISI KIRI: FORM LOGIN / REGISTER (Full screen di HP, 50% di Desktop) */}
-      <div className="w-full lg:w-1/2 xl:w-[48%] min-h-screen flex flex-col justify-between px-6 py-8 sm:px-12 md:px-16 lg:px-16 xl:px-24 bg-white z-10">
-        {/* LOGO PT */}
-        <div className="flex items-center">
-          <img
-            src="/Logo OKG.png"
-            alt="Logo PT OKG"
-            className="h-10 sm:h-12 w-auto max-w-[220px] object-contain"
-          />
-        </div>
+    <main className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 antialiased font-sans select-none overflow-x-hidden">
+      {/* BACKGROUND GUDANG DENGAN BLUR 40% & OVERLAY */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <img
+          src="/gudang.png"
+          alt="Gudang SGM PT OKG"
+          className="w-full h-full object-cover object-center scale-105"
+          style={{ filter: "blur(8px)" }}
+        />
+        {/* Dark overlay for contrast */}
+        <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-[1px]" />
+      </div>
 
-        {/* CONTAINER TENGAH: GREETING & FORM */}
-        <div className="my-auto py-8 sm:py-10 max-w-md w-full mx-auto lg:mx-0">
+      {/* CONTAINER FORM LOGIN DITENGAH */}
+      <div className="relative z-10 w-full max-w-[420px] sm:max-w-[440px] my-auto">
+        {/* CARD LOGIN / REGISTER */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/30 border border-white/60 p-6 sm:p-8 md:p-9 text-slate-900 transition-all">
+          {/* LOGO OKG DI TENGAH ATAS FORM LOGIN */}
+          <div className="flex justify-center mb-5 sm:mb-6">
+            <img
+              src="/Logo OKG.png"
+              alt="Logo PT OKG"
+              className="h-12 sm:h-14 w-auto max-w-[220px] object-contain drop-shadow-xs"
+            />
+          </div>
+
           {/* TITLE & GREETING */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
-              {mode === "login" ? (
-                <>
-                  <span>Selamat Datang</span>
-                </>
-              ) : (
-                <>
-                  Daftar Akun
-                </>
-              )}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
+              {mode === "login" ? "Selamat Datang" : "Daftar Akun"}
             </h1>
-            <p className="mt-2 text-xs sm:text-sm text-slate-500 font-medium">
+            <p className="mt-1.5 text-xs sm:text-sm text-slate-500 font-medium">
               {mode === "login"
                 ? "Silakan masuk ke akun Anda untuk melanjutkan"
-                : "Silakan lengkapi data berikut"}
+                : "Silakan lengkapi data pendaftaran berikut"}
             </p>
           </div>
 
@@ -67,6 +70,9 @@ export default function LoginPage() {
           {mode === "login" && (
             <form action={loginFormAction} className="space-y-4">
               <div>
+                <label htmlFor="login-email" className="sr-only">
+                  Email
+                </label>
                 <input
                   id="login-email"
                   name="email"
@@ -79,6 +85,9 @@ export default function LoginPage() {
               </div>
 
               <div className="relative">
+                <label htmlFor="login-password" className="sr-only">
+                  Password
+                </label>
                 <input
                   id="login-password"
                   name="password"
@@ -99,16 +108,7 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-xs pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none text-slate-600 hover:text-slate-900">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded-md border-slate-300 text-[#5D5FEF] focus:ring-[#5D5FEF]"
-                  />
-                  <span className="font-medium">Ingat Saya</span>
-                </label>
+              <div className="flex items-center justify-end text-xs pt-0.5">
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(true)}
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="w-full h-11 sm:h-12 rounded-xl font-semibold text-xs sm:text-sm text-white bg-[#5D5FEF] hover:bg-[#4E50E0] active:scale-[0.99] transition-all shadow-md shadow-[#5D5FEF]/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full h-11 sm:h-12 rounded-xl font-semibold text-xs sm:text-sm text-white bg-[#5D5FEF] hover:bg-[#4E50E0] active:scale-[0.99] transition-all shadow-md shadow-[#5D5FEF]/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isPending ? "Memproses..." : "Masuk"}
                 </button>
@@ -134,6 +134,9 @@ export default function LoginPage() {
           {mode === "register" && (
             <form action={registerFormAction} className="space-y-3.5">
               <div>
+                <label htmlFor="register-name" className="sr-only">
+                  Nama Lengkap
+                </label>
                 <input
                   id="register-name"
                   name="name"
@@ -146,6 +149,9 @@ export default function LoginPage() {
               </div>
 
               <div>
+                <label htmlFor="register-email" className="sr-only">
+                  Alamat Email Perusahaan
+                </label>
                 <input
                   id="register-email"
                   name="email"
@@ -158,11 +164,14 @@ export default function LoginPage() {
               </div>
 
               <div>
+                <label htmlFor="register-site" className="sr-only">
+                  Site
+                </label>
                 <select
                   id="register-site"
                   name="siteId"
                   defaultValue="BATULICIN"
-                  className="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs sm:text-sm text-slate-900 focus:border-[#5D5FEF] focus:outline-none focus:ring-2 focus:ring-[#5D5FEF]/15 transition-all shadow-2xs"
+                  className="h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs sm:text-sm text-slate-900 focus:border-[#5D5FEF] focus:outline-none focus:ring-2 focus:ring-[#5D5FEF]/15 transition-all shadow-2xs cursor-pointer"
                 >
                   {SITES.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -173,6 +182,9 @@ export default function LoginPage() {
               </div>
 
               <div className="relative">
+                <label htmlFor="register-password" className="sr-only">
+                  Password
+                </label>
                 <input
                   id="register-password"
                   name="password"
@@ -188,6 +200,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
                   tabIndex={-1}
+                  aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -197,68 +210,54 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="w-full h-11 sm:h-12 rounded-xl font-semibold text-xs sm:text-sm text-white bg-[#5D5FEF] hover:bg-[#4E50E0] active:scale-[0.99] transition-all shadow-md shadow-[#5D5FEF]/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full h-11 sm:h-12 rounded-xl font-semibold text-xs sm:text-sm text-white bg-[#5D5FEF] hover:bg-[#4E50E0] active:scale-[0.99] transition-all shadow-md shadow-[#5D5FEF]/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isPending ? "Mendaftarkan..." : "Daftar Akun"}
                 </button>
               </div>
             </form>
           )}
+
+          {/* FOOTER SWITCH (LOGIN / REGISTER) */}
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs sm:text-sm text-slate-500">
+            {mode === "login" ? (
+              <span>
+                Belum memiliki akun?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("register")}
+                  className="font-bold text-[#5D5FEF] hover:underline cursor-pointer"
+                >
+                  Daftar
+                </button>
+              </span>
+            ) : (
+              <span>
+                Sudah memiliki akun?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="font-bold text-[#5D5FEF] hover:underline cursor-pointer"
+                >
+                  Masuk
+                </button>
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* FOOTER SWITCH */}
-        <div className="pt-6 pb-2 text-xs sm:text-sm text-slate-500 max-w-md w-full mx-auto lg:mx-0">
-          {mode === "login" ? (
-            <span>
-              Belum memiliki akun?{" "}
-              <button
-                type="button"
-                onClick={() => setMode("register")}
-                className="font-bold text-[#5D5FEF] hover:underline"
-              >
-                Daftar
-              </button>
-            </span>
-          ) : (
-            <span>
-              Sudah memiliki akun?{" "}
-              <button
-                type="button"
-                onClick={() => setMode("login")}
-                className="font-bold text-[#5D5FEF] hover:underline"
-              >
-                Masuk
-              </button>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* SISI KANAN: FULL SCREEN HERO IMAGE (gudang.png) - HANYA DI DESKTOP / LAPTOP (hidden di HP) */}
-      <div className="hidden lg:block lg:w-1/2 xl:w-[52%] min-h-screen relative bg-slate-900 overflow-hidden">
-        <img
-          src="/gudang.png"
-          alt="Gudang SGM PT OKG"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
-
-        {/* Caption & Brand Overlay at Bottom */}
-        <div className="absolute bottom-10 left-10 right-10 text-white space-y-2.5">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight drop-shadow-sm">
-            Support Goods &amp; Maintenance
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 font-mono tracking-wide">
-            Batulicin • Tanjung • Kendari
+        {/* BRANDING FOOTER DI BAWAH CARD */}
+        <div className="mt-5 text-center text-white/80 drop-shadow-sm font-medium space-y-1">
+          <p className="text-xs font-semibold tracking-wide">
+            Support Goods &amp; Maintenance • PT OKG
           </p>
         </div>
       </div>
 
       {/* FORGOT PASSWORD MODAL */}
       {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-slate-200 space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
                 <Info className="h-4 w-4 text-[#5D5FEF]" />
@@ -266,7 +265,7 @@ export default function LoginPage() {
               </div>
               <button
                 onClick={() => setShowForgotModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -277,7 +276,7 @@ export default function LoginPage() {
             <div className="pt-2">
               <button
                 onClick={() => setShowForgotModal(false)}
-                className="w-full h-9 rounded-xl font-semibold text-xs text-white bg-[#5D5FEF] hover:bg-[#4E50E0] transition-colors"
+                className="w-full h-9 rounded-xl font-semibold text-xs text-white bg-[#5D5FEF] hover:bg-[#4E50E0] transition-colors cursor-pointer"
               >
                 Mengerti
               </button>

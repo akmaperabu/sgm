@@ -84,7 +84,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
   // Helper url query
   const makeTabHref = (tabId: string) => {
     const q = new URLSearchParams();
-    if (sp.site) q.set("site", String(sp.site));
     if (sp.period) q.set("period", String(sp.period));
     if (tabId !== "ALL") q.set("status", tabId);
     return `/purchasing${q.toString() ? `?${q.toString()}` : ""}`;
@@ -94,7 +93,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Pembelian & Tracking (PR/PO Status)"
         desc="Kelola pengajuan pembelian, penerbitan PO, vendor, estimasi anggaran, dan pelacakan pengiriman."
         actions={
@@ -118,21 +116,19 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
             <Link
               key={t.id}
               href={makeTabHref(t.id)}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 font-semibold transition-all shadow-2xs ${
-                active
-                  ? "bg-blue-700 text-white shadow-blue-700/20"
-                  : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
+              className={`flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 font-semibold transition-all shadow-2xs ${active
+                ? "bg-blue-700 text-white shadow-blue-700/20"
+                : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
             >
               <span>{t.label}</span>
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono font-bold ${
-                  active
-                    ? "bg-white/20 text-white"
-                    : t.alert
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono font-bold ${active
+                  ? "bg-white/20 text-white"
+                  : t.alert
                     ? "bg-amber-100 text-amber-800"
                     : "bg-slate-100 text-slate-600"
-                }`}
+                  }`}
               >
                 {t.count}
               </span>
@@ -164,6 +160,41 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
               const remaining = Math.max(0, p.qty - p.receivedQty);
               const isPartial = p.status === "Partially Received" || (p.receivedQty > 0 && p.receivedQty < p.qty);
               const estTotal = p.totalPrice ?? (p.estimatedPrice ? p.estimatedPrice * p.qty : null);
+
+              const slipDetail = {
+                docNumber: p.poNumber ? `${p.prNumber} / ${p.poNumber}` : p.prNumber,
+                docTitle: p.poNumber ? "PURCHASE ORDER & PERMINTAAN PENGADAAN (PR/PO SLIP)" : "SURAT PERMINTAAN PEMBELIAN (PURCHASE REQUEST SLIP)",
+                date: fmtDate(p.createdAt),
+                siteName: siteLabel(p.siteId),
+                requesterOrVendorLabel: (p.vendorRelation?.name ?? p.vendor) ? "Vendor Terpilih" : "Pemohon (Requester)",
+                requesterOrVendorValue: (p.vendorRelation?.name ?? p.vendor) ?? p.requester.name,
+                officerName: "Staff Procurement / Purchasing",
+                purposeOrRefLabel: "Keterangan / PO & Resi",
+                purposeOrRefValue: [
+                  p.poNumber ? `No. PO: ${p.poNumber}` : null,
+                  `Status: ${p.status}`,
+                  p.trackingNo ? `No. Resi/SJ: ${p.trackingNo}` : null,
+                  p.notes ? `Catatan: ${p.notes}` : null,
+                ].filter(Boolean).join(" • "),
+                items: [
+                  {
+                    code: p.item?.code ?? p.newItemCode ?? "ITEM-BARU",
+                    name: name ?? "Barang Pengadaan",
+                    category: categoryLabel(p.item?.category ?? p.newItemCategory),
+                    unit: p.item?.unit ?? "pcs",
+                    qty: p.qty,
+                    price: p.estimatedPrice,
+                    total: estTotal,
+                  },
+                ],
+                notes: p.notes,
+                signatures: {
+                  firstTitle: "Diajukan Oleh",
+                  firstName: `${p.requester.name} (Pemohon)`,
+                  secondTitle: "Disetujui Oleh",
+                  secondName: "Staff Procurement",
+                },
+              };
 
               const detailContent = (
                 <div className="space-y-4">
@@ -213,73 +244,15 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                     <DetailItem label="Diterima di Gudang" value={fmtDate(p.receivedAt)} />
                   </DetailSection>
 
-                  <div className="pt-3 flex items-center justify-between border-t border-slate-100">
+                  <div className="px-6 py-4 flex items-center justify-between gap-3 border-t border-slate-100">
                     <span className="text-xs text-slate-500">Cetak berkas fisik dokumen pengadaan:</span>
                     <PrintSlipDialog
                       triggerLabel="Cetak Bukti PR / PO"
-                      detail={{
-                        docNumber: p.poNumber ? `${p.prNumber} / ${p.poNumber}` : p.prNumber,
-                        docTitle: p.poNumber ? "PURCHASE ORDER & PERMINTAAN PENGADAAN (PR/PO SLIP)" : "SURAT PERMINTAAN PEMBELIAN (PURCHASE REQUEST SLIP)",
-                        date: fmtDate(p.createdAt),
-                        siteName: siteLabel(p.siteId),
-                        requesterOrVendorLabel: p.vendor ? "Vendor Terpilih" : "Pemohon (Requester)",
-                        requesterOrVendorValue: p.vendor ? `${p.vendor} (Pemohon: ${p.requester.name})` : p.requester.name,
-                        officerName: "Staff Procurement / Purchasing",
-                        purposeOrRefLabel: "Status & Resi",
-                        purposeOrRefValue: `Status: ${p.status} • Resi: ${p.trackingNo || "-"}`,
-                        items: [
-                          {
-                            code: p.item?.code ?? p.newItemCode ?? "ITEM-BARU",
-                            name: name ?? "Barang Pengadaan",
-                            category: categoryLabel(p.item?.category ?? p.newItemCategory),
-                            unit: p.item?.unit ?? "pcs",
-                            qty: p.qty,
-                            price: p.estimatedPrice,
-                            total: estTotal,
-                          },
-                        ],
-                        notes: p.notes,
-                        signatures: {
-                          firstTitle: "Diajukan Oleh (Pemohon)",
-                          firstName: p.requester.name,
-                          secondTitle: "Disetujui Oleh (Procurement)",
-                          secondName: "Staff Procurement",
-                        },
-                      }}
+                      detail={slipDetail}
                     />
                   </div>
                 </div>
               );
-
-              const slipDetail = {
-                docNumber: p.poNumber ? `${p.prNumber} / ${p.poNumber}` : p.prNumber,
-                docTitle: p.poNumber ? "PURCHASE ORDER & PERMINTAAN PENGADAAN (PR/PO SLIP)" : "SURAT PERMINTAAN PEMBELIAN (PURCHASE REQUEST SLIP)",
-                date: fmtDate(p.createdAt),
-                siteName: siteLabel(p.siteId),
-                requesterOrVendorLabel: p.vendor ? "Vendor Terpilih" : "Pemohon (Requester)",
-                requesterOrVendorValue: p.vendor ? `${p.vendor} (Pemohon: ${p.requester.name})` : p.requester.name,
-                officerName: "Staff Procurement / Purchasing",
-                purposeOrRefLabel: "Status & Resi",
-                purposeOrRefValue: `Status: ${p.status} • Resi: ${p.trackingNo || "-"}`,
-                items: [
-                  {
-                    code: p.item?.code ?? p.newItemCode ?? "ITEM-BARU",
-                    name: name ?? "Barang Pengadaan",
-                    category: categoryLabel(p.item?.category ?? p.newItemCategory),
-                    unit: p.item?.unit ?? "pcs",
-                    qty: p.qty,
-                    price: p.estimatedPrice,
-                    total: estTotal,
-                  },
-                ],
-                notes: p.notes,
-                signatures: {
-                  firstTitle: "Diajukan Oleh (Pemohon)",
-                  firstName: p.requester.name,
-                  secondTitle: "Disetujui Oleh (Procurement)",
-                  secondName: "Staff Procurement",
-                },
-              };
 
               return (
                 <tr key={p.id} className="group hover:bg-slate-50/70 transition-colors">
@@ -552,6 +525,9 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                                     <Field label="Satuan"><input name="unit" defaultValue="pcs" required className={inputCls} /></Field>
                                     <Field label={`Jumlah Fisik Diterima (Sisa: ${remaining})`}><input name="receivedQty" type="number" min={1} max={remaining} defaultValue={remaining} required className={`${inputCls} font-mono`} /></Field>
                                   </div>
+                                  <Field label="Stok Minimum (opsional)">
+                                    <input name="minStock" type="number" min={0} defaultValue={0} className={`${inputCls} font-mono`} />
+                                  </Field>
                                   <div className="pt-2"><button className={`${btnPrimary} w-full`}>Simpan ke Master &amp; Terima Fisik</button></div>
                                 </form>
                               </FormDialog>

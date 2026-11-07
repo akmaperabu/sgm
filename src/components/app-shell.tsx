@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, ArrowDownToLine, ArrowUpFromLine, RefreshCw, Archive,
   SlidersHorizontal, Wrench, Siren, CalendarClock, Factory, Settings, Menu, X, LogOut,
-  Search, MapPin, History, Activity, Building2
+  MapPin, History, Activity, Building2
 } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { SITES } from "@/lib/constants";
@@ -192,16 +192,6 @@ export function AppShell({
                 className="h-7 w-auto max-w-[130px] sm:max-w-[170px] object-contain"
               />
             </div>
-
-            <div className="relative hidden md:flex items-center">
-              <Search className="pointer-events-none absolute left-3.5 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari barang, nomor PO/PR, aset..."
-                aria-label="Pencarian cepat"
-                className="h-9 w-64 md:w-80 rounded-full border border-slate-200 bg-slate-50/60 pl-9 pr-4 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/15 transition-all"
-              />
-            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -225,9 +215,8 @@ export function AppShell({
         <div className="flex items-center justify-around">
           <Link
             href="/"
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-              pathname === "/" ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
-            }`}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${pathname === "/" ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
+              }`}
           >
             <LayoutDashboard className="h-4.5 w-4.5 mb-0.5" />
             <span className="text-[10px]">Home</span>
@@ -235,9 +224,8 @@ export function AppShell({
 
           <Link
             href="/goods-receipt"
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-              pathname.startsWith("/goods-receipt") ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
-            }`}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${pathname.startsWith("/goods-receipt") ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
+              }`}
           >
             <ArrowDownToLine className="h-4.5 w-4.5 mb-0.5" />
             <span className="text-[10px]">Masuk</span>
@@ -245,9 +233,8 @@ export function AppShell({
 
           <Link
             href="/goods-issue"
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-              pathname.startsWith("/goods-issue") ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
-            }`}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${pathname.startsWith("/goods-issue") ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
+              }`}
           >
             <ArrowUpFromLine className="h-4.5 w-4.5 mb-0.5" />
             <span className="text-[10px]">Keluar</span>
@@ -255,9 +242,8 @@ export function AppShell({
 
           <Link
             href="/transactions"
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
-              pathname.startsWith("/transactions") ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
-            }`}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${pathname.startsWith("/transactions") ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-900"
+              }`}
           >
             <History className="h-4.5 w-4.5 mb-0.5" />
             <span className="text-[10px]">Riwayat</span>

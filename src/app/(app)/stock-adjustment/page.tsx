@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/page-header";
 import { FormDialog } from "@/components/form-dialog";
 import { ItemSearchSelect } from "@/components/item-search-select";
-import { Empty, Field, btnPrimary, inputCls, selectCls, stickyTd, stickyTh, table, tableWrap, td, th } from "@/components/ui";
+import { Empty, Field, btnPrimary, inputCls, stickyTd, stickyTh, table, tableWrap, td, th } from "@/components/ui";
 import { siteLabel } from "@/lib/constants";
 import { fmtDateTime, num } from "@/lib/format";
 import { adjustStock } from "@/actions/goods";
@@ -27,7 +27,6 @@ export default async function StockAdjustmentPage({ searchParams }: { searchPara
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Stock Adjustment"
         actions={
           !ctx.readOnly ? (

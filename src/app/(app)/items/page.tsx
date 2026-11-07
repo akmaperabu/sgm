@@ -33,7 +33,6 @@ export default async function ItemsPage({ searchParams }: { searchParams: Search
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Master Barang"
         actions={
           ctx.isAdmin && !ctx.readOnly ? (
@@ -191,11 +190,10 @@ export default async function ItemsPage({ searchParams }: { searchParams: Search
                             <input type="hidden" name="id" value={c.item.id} />
                             <button
                               type="submit"
-                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                                c.item.isActive
+                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${c.item.isActive
                                   ? "text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                                   : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                              }`}
+                                }`}
                             >
                               <Power className="h-3.5 w-3.5 shrink-0" />
                               <span>{c.item.isActive ? "Nonaktifkan Barang" : "Aktifkan Barang"}</span>

@@ -1,11 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
-import { opt, req, run, str } from "@/lib/action-utils";
+import { requireAdmin } from "@/lib/auth";
+import { opt, req, run } from "@/lib/action-utils";
 
 export async function saveVendor(fd: FormData) {
-  await requireUser();
+  await requireAdmin();
   await run("/vendors", async () => {
     const id = opt(fd, "id");
     const name = req(fd, "name", "Nama vendor");
@@ -41,7 +41,7 @@ export async function saveVendor(fd: FormData) {
 }
 
 export async function toggleVendor(fd: FormData) {
-  await requireUser();
+  await requireAdmin();
   await run("/vendors", async () => {
     const id = req(fd, "id", "ID Vendor");
     const vendor = await prisma.vendor.findUniqueOrThrow({ where: { id } });
@@ -53,7 +53,7 @@ export async function toggleVendor(fd: FormData) {
 }
 
 export async function deleteVendor(fd: FormData) {
-  await requireUser();
+  await requireAdmin();
   await run("/vendors", async () => {
     const id = req(fd, "id", "ID Vendor");
     const count = await prisma.purchaseRequest.count({ where: { vendorId: id } });

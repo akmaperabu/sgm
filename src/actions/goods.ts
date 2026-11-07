@@ -19,10 +19,16 @@ const validCat = (c: string) => {
 const PREFIX: Record<string, string> = { ATK: "ATK", HSE: "HSE", SPAREPART: "SPR" };
 
 async function autoCode(siteId: string, category: string) {
-  const n = await prisma.inventoryItem.count({ where: { siteId, category } });
-  let i = n + 1;
-  for (;;) {
-    const code = `${PREFIX[category]}-${String(i).padStart(3, "0")}`;
+  const head = `${PREFIX[category]}-`;
+  const last = await prisma.inventoryItem.findFirst({
+    where: { siteId, code: { startsWith: head } },
+    orderBy: { code: "desc" },
+    select: { code: true },
+  });
+  const lastSeq = last ? Number.parseInt(last.code.slice(head.length), 10) : 0;
+  let i = Number.isNaN(lastSeq) ? 1 : lastSeq + 1;
+  for (; ;) {
+    const code = `${head}${String(i).padStart(3, "0")}`;
     if (!(await prisma.inventoryItem.findUnique({ where: { siteId_code: { siteId, code } } }))) return code;
     i++;
   }
@@ -68,49 +74,21 @@ export async function toggleItem(fd: FormData) {
 export async function receiveManual(fd: FormData) {
   const admin = await requireAdmin();
   await run("/goods-receipt", async () => {
-    const isNew = opt(fd, "isNew") === "true" || str(fd, "itemId") === "__NEW__";
+    const itemId = req(fd, "itemId", "Barang");
     const qty = int(fd, "qty", "Jumlah");
     if (qty <= 0) throw new Error("Jumlah harus lebih dari 0.");
 
-    if (isNew) {
-      const siteId = validSite(req(fd, "siteId", "Site"));
-      const name = req(fd, "name", "Nama barang");
-      const category = validCat(req(fd, "category", "Kategori"));
-      const unit = opt(fd, "unit") || "pcs";
-      const code = opt(fd, "code")?.toUpperCase() ?? (await autoCode(siteId, category));
-      if (await prisma.inventoryItem.findUnique({ where: { siteId_code: { siteId, code } } })) {
-        throw new Error(`Kode ${code} sudah dipakai di site tersebut.`);
-      }
-
-      await prisma.$transaction(async (tx) => {
-        const item = await tx.inventoryItem.create({
-          data: { siteId, code, name, category, unit, minStock: 0, currentStock: 0 },
-        });
-        await createCardForNewItem(tx, item.id, siteId, 0);
-        await moveStock(tx, {
-          itemId: item.id,
-          type: "IN",
-          qty,
-          refType: "MANUAL",
-          refNo: opt(fd, "refNo"),
-          note: opt(fd, "note") ?? "Penerimaan manual barang baru",
-          userId: admin.id,
-        });
-      });
-    } else {
-      const itemId = req(fd, "itemId", "Barang");
-      await prisma.$transaction((tx) =>
-        moveStock(tx, {
-          itemId,
-          type: "IN",
-          qty,
-          refType: "MANUAL",
-          refNo: opt(fd, "refNo"),
-          note: opt(fd, "note") ?? "Penerimaan manual",
-          userId: admin.id,
-        }),
-      );
-    }
+    await prisma.$transaction((tx) =>
+      moveStock(tx, {
+        itemId,
+        type: "IN",
+        qty,
+        refType: "MANUAL",
+        refNo: opt(fd, "refNo"),
+        note: opt(fd, "note") ?? "Penerimaan manual",
+        userId: admin.id,
+      }),
+    );
   }, "Penerimaan barang dicatat.");
 }
 

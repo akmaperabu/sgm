@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, type ReactNode, type ElementType } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 
@@ -95,11 +95,10 @@ export function RowActionMenu({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-600/20 active:scale-95 ${
-          open
+        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-600/20 active:scale-95 ${open
             ? "border-blue-500 bg-blue-50 text-blue-700"
             : "border-slate-200/80 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-        }`}
+          }`}
         aria-label="Menu aksi"
         title="Menu aksi"
       >
@@ -122,72 +121,13 @@ export function RowActionMenu({
             ...(coords.right !== undefined ? { right: coords.right } : { left: coords.left }),
             transform: coords.isUpwards ? "translateY(-100%)" : "none",
           } : undefined}
-          className={`z-50 min-w-[210px] rounded-xl border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/15 text-xs text-slate-700 transition-all ${
-            open ? "block opacity-100 scale-100" : "hidden opacity-0 scale-95 pointer-events-none"
-          }`}
+          className={`z-50 min-w-[210px] rounded-xl border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/15 text-xs text-slate-700 transition-all ${open ? "block opacity-100 scale-100" : "hidden opacity-0 scale-95 pointer-events-none"
+            }`}
         >
           {children}
         </div>,
         document.body
       )}
     </div>
-  );
-}
-
-export function RowActionItem({
-  icon: Icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon?: ElementType;
-  label: string;
-  onClick?: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-        danger
-          ? "text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-          : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-      }`}
-    >
-      {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
-      <span>{label}</span>
-    </button>
-  );
-}
-
-export function RowIconButton({
-  icon: Icon,
-  label,
-  onClick,
-  tone = "default",
-}: {
-  icon: ElementType;
-  label: string;
-  onClick?: () => void;
-  tone?: "default" | "primary" | "danger" | "amber";
-}) {
-  const tones = {
-    default: "text-slate-500 hover:text-slate-800 hover:bg-slate-100 border-slate-200/80",
-    primary: "text-blue-700 hover:text-blue-800 hover:bg-blue-50 border-blue-200/80",
-    danger: "text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200/80",
-    amber: "text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200/80",
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-600/20 active:scale-95 ${tones[tone]}`}
-    >
-      <Icon className="h-4 w-4 shrink-0" />
-    </button>
   );
 }

@@ -14,11 +14,11 @@ const BASE_ITEMS = [
   { code: "HSE-001", name: "Sarung Tangan Safety", category: "HSE", unit: "pasang", min: 20 },
   { code: "HSE-002", name: "Helm Safety", category: "HSE", unit: "pcs", min: 8 },
   { code: "HSE-003", name: "APAR 6 Kg", category: "HSE", unit: "unit", min: 3 },
-  { code: "SPR-001", name: "Oli Mesin 15W-40 (liter)", category: "SPARETYPE", unit: "liter", min: 40 },
-  { code: "SPR-002", name: "Filter Oli Truck", category: "SPARETYPE", unit: "pcs", min: 6 },
-  { code: "SPR-003", name: "Regulator Oxygen", category: "SPARETYPE", unit: "unit", min: 2 },
-  { code: "SPR-004", name: "Seal Kompresor Acetylene", category: "SPARETYPE", unit: "set", min: 3 },
-].map((i) => ({ ...i, category: i.category === "SPARETYPE" ? "SPAREPART" : i.category }));
+  { code: "SPR-001", name: "Oli Mesin 15W-40 (liter)", category: "SPAREPART", unit: "liter", min: 40 },
+  { code: "SPR-002", name: "Filter Oli Truck", category: "SPAREPART", unit: "pcs", min: 6 },
+  { code: "SPR-003", name: "Regulator Oxygen", category: "SPAREPART", unit: "unit", min: 2 },
+  { code: "SPR-004", name: "Seal Kompresor Acetylene", category: "SPAREPART", unit: "set", min: 3 },
+];
 
 // stok saat ini per site (urut sesuai BASE_ITEMS)
 const STOCK: Record<string, number[]> = {
@@ -44,11 +44,11 @@ async function main() {
     },
   });
   const admin = await prisma.user.upsert({
-    where: { email: "Jaya@gmail.com" },
+    where: { email: "jaya@gmail.com" },
     update: {},
     create: {
       name: "Jaya",
-      email: "Jaya@gmail.com",
+      email: "jaya@gmail.com",
       passwordHash: await bcrypt.hash("Admin123", 10),
       role: "ADMIN",
       siteId: null,
@@ -153,6 +153,22 @@ async function main() {
     }
   }
 
+  // ---- Vendors
+  const vendorDefs = [
+    { name: "PT Aneka Gas & Teknik Industri", contactPerson: "Budi Santoso", phone: "0812-3456-7890", address: "Kawasan Industri Batulicin No. 12" },
+    { name: "CV Surya Perkasa Diesel & Truck", contactPerson: "Hendra Wijaya", phone: "0813-9876-5432", address: "Jl. Trans Kalimantan Km 8" },
+    { name: "PT Sumber Safety Prima Mandiri", contactPerson: "Siti Aminah", phone: "0852-1122-3344", address: "Ruko Sentra Niaga No. 5B" },
+  ];
+  const seededVendors: Record<string, string> = {};
+  for (const v of vendorDefs) {
+    const row = await prisma.vendor.upsert({
+      where: { name: v.name },
+      update: {},
+      create: v,
+    });
+    seededVendors[v.name] = row.id;
+  }
+
   // ---- Data contoh transaksi (hanya bila belum ada)
   if ((await prisma.purchaseRequest.count()) === 0) {
     const mk = (n: number, site: string, data: object) =>
@@ -161,8 +177,8 @@ async function main() {
       });
     await mk(1, "BATULICIN", { itemId: itemIds.BATULICIN[8], qty: 3, notes: "Stok regulator kosong", status: "Submitted" });
     await mk(2, "BATULICIN", { isNewItem: true, newItemName: "Kacamata Las Shade 11", newItemCategory: "HSE", qty: 6, notes: "Untuk tim welding", status: "Approved", approvedAt: now });
-    await mk(3, "BATULICIN", { itemId: itemIds.BATULICIN[7], qty: 10, status: "On Process", poNumber: "PO-2610-0012", vendor: "CV Mitra Teknik", approvedAt: now });
-    await mk(4, "BATULICIN", { itemId: itemIds.BATULICIN[6], qty: 100, status: "In Transit", poNumber: "PO-2610-0009", vendor: "PT Lubrindo", trackingNo: "SJ-88213", eta: addDays(today, 2), approvedAt: now });
+    await mk(3, "BATULICIN", { itemId: itemIds.BATULICIN[7], qty: 10, status: "On Process", poNumber: "PO-2610-0012", vendor: "CV Surya Perkasa Diesel & Truck", vendorId: seededVendors["CV Surya Perkasa Diesel & Truck"], approvedAt: now });
+    await mk(4, "BATULICIN", { itemId: itemIds.BATULICIN[6], qty: 100, status: "In Transit", poNumber: "PO-2610-0009", vendor: "PT Aneka Gas & Teknik Industri", vendorId: seededVendors["PT Aneka Gas & Teknik Industri"], trackingNo: "SJ-88213", eta: addDays(today, 2), approvedAt: now });
     await mk(5, "KENDARI", { itemId: itemIds.KENDARI[6], qty: 60, status: "Submitted", notes: "Oli habis" });
   }
   if ((await prisma.goodsIssue.count()) === 0) {

@@ -35,7 +35,6 @@ export default async function AssetsPage({ searchParams }: { searchParams: Searc
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         showPeriod={false}
         title="Master Aset"
         actions={
@@ -161,13 +160,12 @@ export default async function AssetsPage({ searchParams }: { searchParams: Searc
                             </div>
                             <div className="h-1.5 w-full max-w-[200px] overflow-hidden rounded-full bg-slate-200">
                               <div
-                                className={`h-full rounded-full transition-all ${
-                                  life.status === "OVERDUE"
+                                className={`h-full rounded-full transition-all ${life.status === "OVERDUE"
                                     ? "bg-rose-500"
                                     : life.status === "WARNING"
-                                    ? "bg-amber-500"
-                                    : "bg-emerald-500"
-                                }`}
+                                      ? "bg-amber-500"
+                                      : "bg-emerald-500"
+                                  }`}
                                 style={{ width: `${Math.min(100, life.percentUsed ?? 0)}%` }}
                               />
                             </div>
@@ -253,13 +251,12 @@ export default async function AssetsPage({ searchParams }: { searchParams: Searc
                           <div className="space-y-0.5">
                             <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
                               <div
-                                className={`h-full rounded-full transition-all ${
-                                  life.status === "OVERDUE"
+                                className={`h-full rounded-full transition-all ${life.status === "OVERDUE"
                                     ? "bg-rose-500"
                                     : life.status === "WARNING"
-                                    ? "bg-amber-500"
-                                    : "bg-emerald-500"
-                                }`}
+                                      ? "bg-amber-500"
+                                      : "bg-emerald-500"
+                                  }`}
                                 style={{ width: `${Math.min(100, life.percentUsed ?? 0)}%` }}
                               />
                             </div>
@@ -378,11 +375,10 @@ export default async function AssetsPage({ searchParams }: { searchParams: Searc
                             <input type="hidden" name="id" value={a.id} />
                             <button
                               type="submit"
-                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                                a.isActive
+                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${a.isActive
                                   ? "text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                                   : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                              }`}
+                                }`}
                             >
                               <Power className="h-3.5 w-3.5 shrink-0" />
                               <span>{a.isActive ? "Nonaktifkan Aset" : "Aktifkan Aset"}</span>

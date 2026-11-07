@@ -2,10 +2,10 @@ import Link from "next/link";
 import { getCtx, type SearchParams } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/page-header";
-import { Badge, Empty, StatusBadge, btnPrimary, btnSecondary, table, tableWrap, td, th } from "@/components/ui";
+import { Badge, Empty, btnPrimary, btnSecondary, table, tableWrap, td, th } from "@/components/ui";
 import { assetCategoryLabel, siteLabel } from "@/lib/constants";
 import { daysBetween, fmtDate, num } from "@/lib/format";
-import { ArrowUpRight, Calendar, Siren, Factory } from "lucide-react";
+import { ArrowUpRight, Calendar, Siren } from "lucide-react";
 
 export default async function MaintenanceMonitoringPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -110,7 +110,6 @@ export default async function MaintenanceMonitoringPage({ searchParams }: { sear
     <div className="space-y-6">
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Monitoring Maintenance"
         actions={
           <div className="flex flex-wrap items-center gap-2">

@@ -5,13 +5,13 @@ import { Badge, Empty, table, tableWrap, td, th } from "@/components/ui";
 import { categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDate, num, periodLabel } from "@/lib/format";
 import { TransactionHistoryTable } from "@/components/transaction-history-table";
-import { ArrowDownLeft, ArrowUpRight, History, Layers, SlidersHorizontal } from "lucide-react";
+import { History } from "lucide-react";
 
 export default async function TransactionsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const ctx = await getCtx(sp);
 
-  const [movementsRaw, users, cards, allCards, issues, prs] = await Promise.all([
+  const [movementsRaw, cards, allCards, issues, prs] = await Promise.all([
     prisma.stockMovement.findMany({
       where: {
         ...ctx.siteWhere,
@@ -22,21 +22,27 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       },
       orderBy: [{ createdAt: "desc" }],
     }),
-    prisma.user.findMany({
-      select: { id: true, name: true, role: true },
-    }),
     prisma.inventoryStockCard.findMany({
       where: { ...ctx.siteWhere, periodId: ctx.period.id },
       include: { item: true },
     }),
     prisma.inventoryStockCard.groupBy({
       by: ["periodId"],
+      where: ctx.siteWhere,
       _sum: { qtyIn: true, qtyOut: true, closingStock: true },
       _count: { _all: true },
     }),
-    prisma.goodsIssue.groupBy({ by: ["periodId"], _count: { _all: true } }),
-    prisma.purchaseRequest.groupBy({ by: ["periodId"], _count: { _all: true } }),
+    prisma.goodsIssue.groupBy({ by: ["periodId"], where: ctx.siteWhere, _count: { _all: true } }),
+    prisma.purchaseRequest.groupBy({ by: ["periodId"], where: ctx.siteWhere, _count: { _all: true } }),
   ]);
+
+  const creatorIds = Array.from(new Set(movementsRaw.map((m) => m.createdBy).filter(Boolean) as string[]));
+  const users = creatorIds.length
+    ? await prisma.user.findMany({
+      where: { id: { in: creatorIds } },
+      select: { id: true, name: true, role: true },
+    })
+    : [];
 
   const userMap = new Map(users.map((u) => [u.id, u]));
 
@@ -98,7 +104,6 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Riwayat Transaksi"
       />
 

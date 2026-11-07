@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { getCtx, type SearchParams } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/page-header";
@@ -42,7 +43,7 @@ export default async function VendorsPage({ searchParams }: { searchParams: Sear
   const q = (sp.q ?? "").trim();
   const statusFilter = sp.status ?? "";
 
-  const whereClause: any = {};
+  const whereClause: Prisma.VendorWhereInput = {};
   if (q) {
     whereClause.OR = [
       { name: { contains: q } },
@@ -57,45 +58,48 @@ export default async function VendorsPage({ searchParams }: { searchParams: Sear
     whereClause.isActive = false;
   }
 
-  const vendors = await prisma.vendor.findMany({
-    where: whereClause,
-    include: {
-      _count: {
-        select: { purchaseRequests: true },
-      },
-      purchaseRequests: {
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          prNumber: true,
-          poNumber: true,
-          status: true,
-          createdAt: true,
-          newItemName: true,
-          item: { select: { name: true } },
+  const [vendors, totalVendors, activeVendors, linkedPRCount] = await Promise.all([
+    prisma.vendor.findMany({
+      where: whereClause,
+      include: {
+        _count: {
+          select: { purchaseRequests: true },
+        },
+        purchaseRequests: {
+          take: 5,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            prNumber: true,
+            poNumber: true,
+            status: true,
+            createdAt: true,
+            newItemName: true,
+            item: { select: { name: true } },
+          },
         },
       },
-    },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-  });
-
-  const totalVendors = await prisma.vendor.count();
-  const activeVendors = await prisma.vendor.count({ where: { isActive: true } });
-  const linkedPRCount = await prisma.purchaseRequest.count({
-    where: { vendorId: { not: null } },
-  });
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+    }),
+    prisma.vendor.count(),
+    prisma.vendor.count({ where: { isActive: true } }),
+    prisma.purchaseRequest.count({
+      where: { vendorId: { not: null } },
+    }),
+  ]);
 
   return (
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
+        showPeriod={false}
         title="Master Vendor & Rekanan"
         actions={
-          <FormDialog label="Tambah Vendor" title="Tambah Rekanan Vendor Baru">
-            <VendorForm />
-          </FormDialog>
+          ctx.isAdmin ? (
+            <FormDialog label="Tambah Vendor" title="Tambah Rekanan Vendor Baru">
+              <VendorForm />
+            </FormDialog>
+          ) : null
         }
       />
 
@@ -286,9 +290,8 @@ export default async function VendorsPage({ searchParams }: { searchParams: Sear
                         <div className="text-left group/item cursor-pointer">
                           <div className="font-semibold text-slate-900 group-hover/item:text-blue-700 transition-colors underline-offset-2 hover:underline flex items-center gap-2">
                             <span
-                              className={`h-2 w-2 rounded-full shrink-0 ${
-                                v.isActive ? "bg-emerald-500 shadow-xs shadow-emerald-500/50" : "bg-slate-300"
-                              }`}
+                              className={`h-2 w-2 rounded-full shrink-0 ${v.isActive ? "bg-emerald-500 shadow-xs shadow-emerald-500/50" : "bg-slate-300"
+                                }`}
                             />
                             <span>{v.name}</span>
                           </div>
@@ -345,53 +348,55 @@ export default async function VendorsPage({ searchParams }: { searchParams: Sear
                         {detailContent}
                       </ViewDetailDialog>
 
-                      <FormDialog
-                        title={`Edit Vendor: ${v.name}`}
-                        trigger={
-                          <div className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-                            <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                            <span>Edit Vendor</span>
-                          </div>
-                        }
-                      >
-                        <VendorForm vendor={v} />
-                      </FormDialog>
+                      {ctx.isAdmin && (
+                        <>
+                          <FormDialog
+                            title={`Edit Vendor: ${v.name}`}
+                            trigger={
+                              <div className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                                <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                                <span>Edit Vendor</span>
+                              </div>
+                            }
+                          >
+                            <VendorForm vendor={v} />
+                          </FormDialog>
 
-                      <form action={toggleVendor} className="w-full">
-                        <input type="hidden" name="id" value={v.id} />
-                        <button
-                          type="submit"
-                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                            v.isActive
-                              ? "text-amber-700 hover:bg-amber-50"
-                              : "text-emerald-700 hover:bg-emerald-50"
-                          }`}
-                        >
-                          <Power className="h-3.5 w-3.5 shrink-0" />
-                          <span>{v.isActive ? "Nonaktifkan Vendor" : "Aktifkan Vendor"}</span>
-                        </button>
-                      </form>
+                          <form action={toggleVendor} className="w-full">
+                            <input type="hidden" name="id" value={v.id} />
+                            <button
+                              type="submit"
+                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${v.isActive
+                                  ? "text-amber-700 hover:bg-amber-50"
+                                  : "text-emerald-700 hover:bg-emerald-50"
+                                }`}
+                            >
+                              <Power className="h-3.5 w-3.5 shrink-0" />
+                              <span>{v.isActive ? "Nonaktifkan Vendor" : "Aktifkan Vendor"}</span>
+                            </button>
+                          </form>
 
-                      <form action={deleteVendor} className="w-full">
-                        <input type="hidden" name="id" value={v.id} />
-                        <button
-                          type="submit"
-                          disabled={v._count.purchaseRequests > 0}
-                          title={
-                            v._count.purchaseRequests > 0
-                              ? "Vendor tidak dapat dihapus karena memiliki riwayat PR/PO"
-                              : "Hapus vendor secara permanen"
-                          }
-                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                            v._count.purchaseRequests > 0
-                              ? "opacity-40 cursor-not-allowed text-slate-400"
-                              : "text-rose-600 hover:bg-rose-50"
-                          }`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 shrink-0" />
-                          <span>Hapus Vendor</span>
-                        </button>
-                      </form>
+                          <form action={deleteVendor} className="w-full">
+                            <input type="hidden" name="id" value={v.id} />
+                            <button
+                              type="submit"
+                              disabled={v._count.purchaseRequests > 0}
+                              title={
+                                v._count.purchaseRequests > 0
+                                  ? "Vendor tidak dapat dihapus karena memiliki riwayat PR/PO"
+                                  : "Hapus vendor secara permanen"
+                              }
+                              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${v._count.purchaseRequests > 0
+                                  ? "opacity-40 cursor-not-allowed text-slate-400"
+                                  : "text-rose-600 hover:bg-rose-50"
+                                }`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                              <span>Hapus Vendor</span>
+                            </button>
+                          </form>
+                        </>
+                      )}
                     </RowActionMenu>
                   </td>
                 </tr>

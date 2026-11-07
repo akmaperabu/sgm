@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ToastNotification } from "./toast-notification";
 
 export const btnBase =
   "inline-flex h-10 sm:h-9 items-center justify-center gap-2 rounded-full px-3.5 sm:px-4 text-xs font-semibold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-xs";
@@ -99,9 +98,4 @@ export function Field({ label, children }: { label: string; children: ReactNode 
       {children}
     </div>
   );
-}
-
-export function Flash({ err, ok }: { err?: string; ok?: string }) {
-  if (!err && !ok) return null;
-  return <ToastNotification err={err} ok={ok} />;
 }

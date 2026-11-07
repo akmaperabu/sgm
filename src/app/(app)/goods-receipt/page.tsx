@@ -32,7 +32,6 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
     <>
       <PageHeader
         ctx={ctx}
-        sp={sp}
         title="Penerimaan Barang (Goods Receipt)"
         desc="Barang masuk ke gudang: dari pembelian (PR Complete) atau penerimaan manual."
         actions={
@@ -283,7 +282,9 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                           requesterOrVendorValue: `${m.refType}${m.refNo ? ` - ${m.refNo}` : ""}`,
                           officerName: "Petugas Gudang SGM",
                           purposeOrRefLabel: "Keterangan Penerimaan",
-                          purposeOrRefValue: m.note ?? "Penerimaan fisik barang gudang",
+                          purposeOrRefValue: m.note
+                            ? (m.refNo && !m.note.includes(m.refNo) ? `${m.note} • No. PO/Ref: ${m.refNo}` : m.note)
+                            : (m.refNo ? `No. PO/SJ: ${m.refNo}` : "Penerimaan fisik barang gudang"),
                           items: [
                             {
                               code: m.item.code,
@@ -295,11 +296,11 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                           ],
                           notes: "Barang telah diterima dan diverifikasi sesuai Surat Jalan/PO fisik.",
                           signatures: {
-                            firstTitle: "Diserahkan Oleh (Vendor/Driver)",
-                            firstName: "(.............................)",
-                            secondTitle: "Diterima Oleh (Gudang)",
+                            firstTitle: "Diserahkan Oleh",
+                            firstName: "(.............................) (Vendor/Driver)",
+                            secondTitle: "Diterima Oleh",
                             secondName: "Staff Gudang",
-                            thirdTitle: "Mengetahui (Supervisor)",
+                            thirdTitle: "Mengetahui",
                             thirdName: "Supervisor Logistik",
                           },
                         }}
