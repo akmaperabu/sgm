@@ -170,17 +170,12 @@ export async function requestPurchase(fd: FormData) {
     const period = await ensureActivePeriod();
     const uploadedPhoto = await saveUploadedFile(fd.get("photo"));
     const photoUrl = uploadedPhoto ?? opt(fd, "photoUrl");
-    const rawPrice = opt(fd, "estimatedPrice");
-    const estimatedPrice = rawPrice ? Math.max(0, Number(rawPrice)) : null;
-    const totalPrice = estimatedPrice && estimatedPrice > 0 ? estimatedPrice * qty : null;
 
     const base = {
       prNumber: await nextNumber("PR", period.periodName),
       siteId,
       periodId: period.id,
       qty,
-      estimatedPrice,
-      totalPrice,
       notes: opt(fd, "notes"),
       photoUrl,
       requestedBy: user.id,
@@ -235,23 +230,12 @@ export async function advancePurchase(fd: FormData) {
 
     if (step === "process") {
       if (pr.status !== "Approved") throw new Error("PR harus berstatus Approved.");
-      const vendorId = req(fd, "vendorId", "Vendor rekanan");
-      const v = await prisma.vendor.findUnique({ where: { id: vendorId } });
-      if (!v) throw new Error("Vendor yang dipilih tidak ditemukan dalam Master Data. Silakan daftarkan vendor terlebih dahulu.");
-      const vendorName = v.name;
-
-      const rawPrice = opt(fd, "estimatedPrice");
-      const updatedPrice = rawPrice ? Math.max(0, Number(rawPrice)) : undefined;
-      const updatedTotal = updatedPrice ? updatedPrice * pr.qty : undefined;
 
       await prisma.purchaseRequest.update({
         where: { id: pr.id },
         data: {
           status: "On Process",
           poNumber: req(fd, "poNumber", "Nomor PO"),
-          vendor: vendorName || null,
-          vendorId: vendorId || null,
-          ...(updatedPrice !== undefined && { estimatedPrice: updatedPrice, totalPrice: updatedTotal }),
         },
       });
       return;

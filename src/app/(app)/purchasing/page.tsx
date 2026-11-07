@@ -9,7 +9,7 @@ import { ViewDetailDialog, DetailSection, DetailItem } from "@/components/view-d
 import { PrintSlipDialog } from "@/components/print-slip-dialog";
 import { Badge, Empty, Field, StatusBadge, btnDanger, btnPrimary, inputCls, selectCls, stickyTd, stickyTh, table, tableWrap, td, th } from "@/components/ui";
 import { ITEM_CATEGORIES, PR_FLOW, categoryLabel, siteLabel } from "@/lib/constants";
-import { fmtDate, fmtMoney, num } from "@/lib/format";
+import { fmtDate, num } from "@/lib/format";
 import { advancePurchase } from "@/actions/goods";
 import { Camera, CheckCircle2, Clock, PackageCheck, Truck, XCircle, Eye, Printer } from "lucide-react";
 
@@ -41,17 +41,16 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
   const ctx = await getCtx(sp);
   const currentStatus = sp.status ? String(sp.status) : "ALL";
 
-  const [allPrs, items, vendors] = await Promise.all([
+  const [allPrs, items] = await Promise.all([
     prisma.purchaseRequest.findMany({
       where: {
         ...ctx.siteWhere,
         OR: [{ periodId: ctx.period.id }, ...(ctx.period.isActive ? [{ status: { notIn: ["Complete", "Rejected"] } }] : [])],
       },
-      include: { item: true, requester: true, vendorRelation: true },
+      include: { item: true, requester: true },
       orderBy: { createdAt: "desc" },
     }),
     ctx.readOnly ? [] : prisma.inventoryItem.findMany({ where: { ...ctx.siteWhere, isActive: true }, orderBy: { name: "asc" } }),
-    prisma.vendor.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
 
   const canEdit = ctx.isAdmin && !ctx.readOnly;
@@ -94,7 +93,7 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
       <PageHeader
         ctx={ctx}
         title="Pembelian & Tracking (PR/PO Status)"
-        desc="Kelola pengajuan pembelian, penerbitan PO, vendor, estimasi anggaran, dan pelacakan pengiriman."
+        desc="Kelola pengajuan pembelian, penerbitan PO, dan pelacakan pengiriman barang."
         actions={
           !ctx.readOnly ? (
             <FormDialog label="Request Beli Barang" title="Purchase Request Baru">
@@ -145,11 +144,11 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
               <th className={th}>No. PR</th>
               {ctx.site === "ALL" && <th className={th}>Site</th>}
               <th className={th}>Kategori</th>
-              <th className={`${th} text-right`}>Qty &amp; Estimasi Nilai</th>
+              <th className={`${th} text-right`}>Qty</th>
               <th className={th}>Pemohon</th>
               <th className={th}>Progres</th>
               <th className={th}>Status</th>
-              <th className={th}>PO / Vendor</th>
+              <th className={th}>No. PO</th>
               <th className={th}>Resi / ETA</th>
               <th className={th}>Aksi</th>
             </tr>
@@ -159,15 +158,14 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
               const name = p.item?.name ?? p.newItemName;
               const remaining = Math.max(0, p.qty - p.receivedQty);
               const isPartial = p.status === "Partially Received" || (p.receivedQty > 0 && p.receivedQty < p.qty);
-              const estTotal = p.totalPrice ?? (p.estimatedPrice ? p.estimatedPrice * p.qty : null);
 
               const slipDetail = {
                 docNumber: p.poNumber ? `${p.prNumber} / ${p.poNumber}` : p.prNumber,
                 docTitle: p.poNumber ? "PURCHASE ORDER & PERMINTAAN PENGADAAN (PR/PO SLIP)" : "SURAT PERMINTAAN PEMBELIAN (PURCHASE REQUEST SLIP)",
                 date: fmtDate(p.createdAt),
                 siteName: siteLabel(p.siteId),
-                requesterOrVendorLabel: (p.vendorRelation?.name ?? p.vendor) ? "Vendor Terpilih" : "Pemohon (Requester)",
-                requesterOrVendorValue: (p.vendorRelation?.name ?? p.vendor) ?? p.requester.name,
+                requesterLabel: "Pemohon (Requester)",
+                requesterValue: p.requester.name,
                 officerName: "Staff Procurement / Purchasing",
                 purposeOrRefLabel: "Keterangan / PO & Resi",
                 purposeOrRefValue: [
@@ -183,8 +181,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                     category: categoryLabel(p.item?.category ?? p.newItemCategory),
                     unit: p.item?.unit ?? "pcs",
                     qty: p.qty,
-                    price: p.estimatedPrice,
-                    total: estTotal,
                   },
                 ],
                 notes: p.notes,
@@ -210,18 +206,12 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                     )}
                   </DetailSection>
 
-                  <DetailSection title="Data Barang & Estimasi Biaya">
+                  <DetailSection title="Data Barang & Kebutuhan">
                     <DetailItem label="Nama Barang" value={name} highlight span2 />
                     <DetailItem label="Kategori" value={categoryLabel(p.item?.category ?? p.newItemCategory)} />
                     <DetailItem label="Tipe Pengadaan" value={p.isNewItem ? "Barang Baru (Pengadaan)" : "Barang Terdaftar"} />
                     <DetailItem label="Jumlah Permintaan" value={<span className="font-semibold text-slate-900">{num(p.qty)} {p.item?.unit ?? "pcs"}</span>} />
                     <DetailItem label="Status Fisik Gudang" value={isPartial ? `Diterima: ${num(p.receivedQty)} (Sisa: ${num(remaining)})` : p.status === "Complete" ? "Lengkap Diterima" : "Menunggu Kedatangan"} />
-                    <DetailItem label="Estimasi Harga Satuan" value={<span className="font-mono text-slate-800">{p.estimatedPrice ? fmtMoney(p.estimatedPrice) : "-"}</span>} />
-                    <DetailItem
-                      label="Total Nilai Pengadaan"
-                      value={<span className="font-semibold font-mono text-slate-900">{estTotal ? fmtMoney(estTotal) : "-"}</span>}
-                      highlight
-                    />
                     {p.photoUrl && (
                       <DetailItem
                         label="Foto Sampel"
@@ -235,9 +225,8 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                     )}
                   </DetailSection>
 
-                  <DetailSection title="Data PO & Vendor Rekanan">
+                  <DetailSection title="Data Pemrosesan & PO">
                     <DetailItem label="Nomor PO" value={<span className="font-mono text-slate-800">{p.poNumber || "-"}</span>} />
-                    <DetailItem label="Vendor Rekanan" value={p.vendorRelation?.name ?? p.vendor ?? "-"} />
                     <DetailItem label="Nomor Resi / Surat Jalan" value={<span className="font-mono text-slate-800">{p.trackingNo || "-"}</span>} />
                     <DetailItem label="Estimasi Tiba (ETA)" value={p.eta ? fmtDate(p.eta) : "-"} />
                     <DetailItem label="Tanggal Disetujui" value={fmtDate(p.approvedAt)} />
@@ -299,18 +288,12 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                         Diterima: {num(p.receivedQty)}/{num(p.qty)}
                       </div>
                     )}
-                    {estTotal && (
-                      <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                        {fmtMoney(estTotal)}
-                      </div>
-                    )}
                   </td>
                   <td className={td}>{p.requester.name}</td>
                   <td className={td}><Progress status={p.status} /></td>
                   <td className={td}><StatusBadge status={p.status} />{p.rejectNote && <div className="text-xs text-rose-700 font-medium mt-1">{p.rejectNote}</div>}</td>
                   <td className={`${td} text-xs`}>
                     <span className="font-mono text-slate-800 font-medium">{p.poNumber ?? "-"}</span>
-                    <div className="text-slate-500 font-medium mt-0.5">{p.vendorRelation?.name ?? p.vendor ?? ""}</div>
                   </td>
                   <td className={`${td} text-xs`}><span className="font-mono text-slate-800 font-medium">{p.trackingNo ?? "-"}</span><div className="font-mono text-slate-400 mt-0.5">{p.eta ? fmtDate(p.eta) : ""}</div></td>
                   <td className={td}>
@@ -410,46 +393,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                                   <input type="hidden" name="step" value="process" />
                                   <Field label="Nomor PO">
                                     <input name="poNumber" required className={`${inputCls} font-mono`} placeholder="PO-2610-0001" />
-                                  </Field>
-
-                                  <Field label="Vendor Rekanan Terpilih">
-                                    <select
-                                      name="vendorId"
-                                      required
-                                      className={selectCls}
-                                      defaultValue={p.vendorId ?? ""}
-                                    >
-                                      <option value="" disabled>-- Pilih Vendor dari Master Data --</option>
-                                      {vendors.map((v) => (
-                                        <option key={v.id} value={v.id}>
-                                          {v.name} {v.contactPerson ? `(PIC: ${v.contactPerson})` : ""}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    <p className="mt-1 text-[11px] text-slate-500 leading-tight">
-                                      Vendor belum terdaftar? Daftarkan terlebih dahulu di menu{" "}
-                                      <a
-                                        href="/vendors"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="font-medium text-blue-700 underline"
-                                      >
-                                        Master Vendor
-                                      </a>{" "}
-                                      untuk meminimalisir kesalahan input.
-                                    </p>
-                                  </Field>
-
-                                  <Field label="Harga Satuan Kesepakatan (Rp, opsional)">
-                                    <input
-                                      name="estimatedPrice"
-                                      type="number"
-                                      min={0}
-                                      step="1000"
-                                      defaultValue={p.estimatedPrice ?? ""}
-                                      className={`${inputCls} font-mono`}
-                                      placeholder="cth: 250000"
-                                    />
                                   </Field>
 
                                   <div className="pt-2"><button className={btnPrimary}>Set On Process &amp; Simpan PO</button></div>

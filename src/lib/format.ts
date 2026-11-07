@@ -45,11 +45,6 @@ export function firstOccurrence(from: Date, day: number) {
 
 export const num = (n: number) => n.toLocaleString("id-ID");
 
-export function fmtMoney(n?: number | null) {
-  if (n === null || n === undefined || isNaN(n)) return "-";
-  return `Rp ${Math.round(n).toLocaleString("id-ID")}`;
-}
-
 export interface AssetLifespanInfo {
   ageLabel: string;
   totalMonthsAge: number;

@@ -278,8 +278,8 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                           docTitle: "BUKTI PENERIMAAN BARANG FISIK (GOODS RECEIPT SLIP)",
                           date: fmtDateTime(m.createdAt),
                           siteName: siteLabel(m.siteId),
-                          requesterOrVendorLabel: "Referensi Pengiriman",
-                          requesterOrVendorValue: `${m.refType}${m.refNo ? ` - ${m.refNo}` : ""}`,
+                          requesterLabel: "Referensi Pengiriman",
+                          requesterValue: `${m.refType}${m.refNo ? ` - ${m.refNo}` : ""}`,
                           officerName: "Petugas Gudang SGM",
                           purposeOrRefLabel: "Keterangan Penerimaan",
                           purposeOrRefValue: m.note
@@ -297,7 +297,7 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                           notes: "Barang telah diterima dan diverifikasi sesuai Surat Jalan/PO fisik.",
                           signatures: {
                             firstTitle: "Diserahkan Oleh",
-                            firstName: "(.............................) (Vendor/Driver)",
+                            firstName: "(.............................) (Kurir / Driver)",
                             secondTitle: "Diterima Oleh",
                             secondName: "Staff Gudang",
                             thirdTitle: "Mengetahui",

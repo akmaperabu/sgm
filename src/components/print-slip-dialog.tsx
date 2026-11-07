@@ -10,8 +10,8 @@ export interface SlipDetail {
   docTitle: string; // "BUKTI PENGELUARAN BARANG (GOODS ISSUE)" | "BUKTI PENERIMAAN BARANG (GOODS RECEIPT)"
   date: string;
   siteName: string;
-  requesterOrVendorLabel: string;
-  requesterOrVendorValue: string;
+  requesterLabel: string;
+  requesterValue: string;
   officerName: string;
   purposeOrRefLabel: string;
   purposeOrRefValue: string;
@@ -21,8 +21,6 @@ export interface SlipDetail {
     category: string;
     unit: string;
     qty: number;
-    price?: number | null;
-    total?: number | null;
   }>;
   notes?: string | null;
   signatures: {
@@ -303,11 +301,15 @@ export function PrintSlipDialog({
                 </div>
               </div>
 
-              {/* Baris 2: Pemohon/Vendor & Petugas */}
+              {/* Baris 2: Pemohon/Penerima & Petugas */}
               <div className="grid grid-cols-2 divide-x divide-black">
                 <div className="flex items-start py-1 px-2.5">
-                  <span className="w-28 text-black font-bold shrink-0">{detail.requesterOrVendorLabel}</span>
-                  <span className="text-black font-semibold break-words flex-1">: {detail.requesterOrVendorValue}</span>
+                  <span className="w-28 text-black font-bold shrink-0">
+                    {detail.requesterLabel || "Pemohon (Requester)"}
+                  </span>
+                  <span className="text-black font-semibold break-words flex-1">
+                    : {detail.requesterValue || "-"}
+                  </span>
                 </div>
                 <div className="flex items-start py-1 px-2.5">
                   <span className="w-28 text-black font-bold shrink-0">Petugas Terkait</span>
@@ -334,12 +336,6 @@ export function PrintSlipDialog({
                   <th className="border border-black px-2 py-1 text-center w-20 font-bold">Kategori</th>
                   <th className="border border-black px-2 py-1 text-right w-14 font-bold">Qty</th>
                   <th className="border border-black px-2 py-1 text-center w-14 font-bold">Satuan</th>
-                  {detail.items.some((i) => typeof i.price === "number") && (
-                    <>
-                      <th className="border border-black px-2 py-1 text-right w-24 font-bold">Harga (Rp)</th>
-                      <th className="border border-black px-2 py-1 text-right w-28 font-bold">Total (Rp)</th>
-                    </>
-                  )}
                 </tr>
               </thead>
               <tbody>
@@ -351,16 +347,6 @@ export function PrintSlipDialog({
                     <td className="border border-black px-2 py-1 text-center text-black">{it.category}</td>
                     <td className="border border-black px-2 py-1 text-right font-mono font-bold text-black">{it.qty}</td>
                     <td className="border border-black px-2 py-1 text-center text-black">{it.unit}</td>
-                    {detail.items.some((i) => typeof i.price === "number") && (
-                      <>
-                        <td className="border border-black px-2 py-1 text-right font-mono text-black">
-                          {typeof it.price === "number" ? Math.round(it.price).toLocaleString("id-ID") : "-"}
-                        </td>
-                        <td className="border border-black px-2 py-1 text-right font-mono font-bold text-black">
-                          {typeof it.total === "number" ? Math.round(it.total).toLocaleString("id-ID") : "-"}
-                        </td>
-                      </>
-                    )}
                   </tr>
                 ))}
               </tbody>
