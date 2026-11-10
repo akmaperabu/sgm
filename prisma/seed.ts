@@ -9,28 +9,16 @@ const prisma = new PrismaClient();
 async function main() {
   const now = new Date();
 
-  // ---- Users (Admin & User)
+  // ---- Admin Utama
   await prisma.user.upsert({
-    where: { email: "jaya@gmail.com" },
-    update: {},
+    where: { email: "jayaharisantoso14@gmail.com" },
+    update: { role: "ADMIN", isActive: true },
     create: {
-      name: "Jaya",
-      email: "jaya@gmail.com",
+      name: "Jaya Hari Santoso",
+      email: "jayaharisantoso14@gmail.com",
       passwordHash: await bcrypt.hash("Admin123", 10),
       role: "ADMIN",
       siteId: null,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: "dandy@gmail.com" },
-    update: {},
-    create: {
-      name: "Dandy",
-      email: "dandy@gmail.com",
-      passwordHash: await bcrypt.hash("Dandy123", 10),
-      role: "USER",
-      siteId: "BATULICIN",
     },
   });
 
