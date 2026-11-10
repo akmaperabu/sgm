@@ -24,7 +24,7 @@ const NAV: Group[] = [
     items: [
       { href: "/goods-receipt", label: "Penerimaan Barang", icon: ArrowDownToLine },
       { href: "/goods-issue", label: "Pengambilan Barang", icon: ArrowUpFromLine },
-      { href: "/purchasing", label: "Pembelian (PR/PO)", icon: RefreshCw },
+      { href: "/purchasing", label: "Permintaan Barang", icon: RefreshCw },
       { href: "/transactions", label: "Riwayat Transaksi", icon: History },
       { href: "/items", label: "Master Barang", icon: Archive },
       { href: "/stock-adjustment", label: "Stock Adjustment", icon: SlidersHorizontal, adminOnly: true },

@@ -78,6 +78,9 @@ export async function receiveManual(fd: FormData) {
     const qty = int(fd, "qty", "Jumlah");
     if (qty <= 0) throw new Error("Jumlah harus lebih dari 0.");
 
+    const uploadedPhoto = await saveUploadedFile(fd.get("photo"));
+    const photoUrl = uploadedPhoto ?? opt(fd, "photoUrl");
+
     await prisma.$transaction((tx) =>
       moveStock(tx, {
         itemId,
@@ -86,6 +89,7 @@ export async function receiveManual(fd: FormData) {
         refType: "MANUAL",
         refNo: opt(fd, "refNo"),
         note: opt(fd, "note") ?? "Penerimaan manual",
+        photoUrl,
         userId: admin.id,
       }),
     );
@@ -241,19 +245,9 @@ export async function advancePurchase(fd: FormData) {
       return;
     }
 
-    if (step === "transit") {
-      if (pr.status !== "On Process") throw new Error("PR harus berstatus On Process.");
-      const eta = opt(fd, "eta");
-      await prisma.purchaseRequest.update({
-        where: { id: pr.id },
-        data: { status: "In Transit", eta: eta ? new Date(eta) : null, trackingNo: opt(fd, "trackingNo") },
-      });
-      return;
-    }
-
     if (step === "complete") {
-      if (!["In Transit", "Partially Received"].includes(pr.status)) {
-        throw new Error("PR harus berstatus In Transit atau Diterima Sebagian.");
+      if (!["On Process", "In Transit", "Partially Received"].includes(pr.status)) {
+        throw new Error("PR harus berstatus On Process atau Diterima Sebagian.");
       }
       const remaining = Math.max(0, pr.qty - pr.receivedQty);
       const batchQty = opt(fd, "receivedQty") ? int(fd, "receivedQty", "Jumlah diterima") : remaining;

@@ -57,6 +57,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       refType: m.refType,
       refNo: m.refNo,
       note: m.note,
+      photoUrl: m.photoUrl,
       siteId: m.siteId,
       item: {
         code: m.item.code,

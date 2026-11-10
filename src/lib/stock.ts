@@ -11,6 +11,7 @@ type MoveInput = {
   refType?: string;
   refNo?: string;
   note?: string;
+  photoUrl?: string | null;
   userId?: string;
 };
 
@@ -61,6 +62,7 @@ export async function moveStock(tx: Tx, input: MoveInput) {
       refType: input.refType,
       refNo: input.refNo,
       note: input.note,
+      photoUrl: input.photoUrl ?? null,
       createdBy: input.userId,
     },
   });

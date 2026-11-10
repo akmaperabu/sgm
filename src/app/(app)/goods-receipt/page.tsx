@@ -3,11 +3,13 @@ import { prisma } from "@/lib/db";
 import { PageHeader, Panel } from "@/components/page-header";
 import { FormDialog } from "@/components/form-dialog";
 import { ItemSearchSelect } from "@/components/item-search-select";
+import { ImageUploadInput } from "@/components/image-upload-input";
 import { Badge, Empty, Field, btnPrimary, inputCls, selectCls, stickyTd, stickyTh, table, tableWrap, td, th } from "@/components/ui";
 import { PrintSlipDialog } from "@/components/print-slip-dialog";
 import { categoryLabel, ITEM_CATEGORIES, siteLabel } from "@/lib/constants";
-import { fmtDate, fmtDateTime, num } from "@/lib/format";
+import { fmtDateTime, num } from "@/lib/format";
 import { advancePurchase, receiveManual } from "@/actions/goods";
+import { Camera } from "lucide-react";
 
 export default async function GoodsReceiptPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
@@ -15,9 +17,9 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
 
   const [transit, moves, items] = await Promise.all([
     prisma.purchaseRequest.findMany({
-      where: { ...ctx.siteWhere, status: { in: ["In Transit", "Partially Received"] } },
+      where: { ...ctx.siteWhere, status: { in: ["On Process", "In Transit", "Partially Received"] } },
       include: { item: true },
-      orderBy: { eta: "asc" },
+      orderBy: { createdAt: "desc" },
     }),
     prisma.stockMovement.findMany({
       where: { ...ctx.siteWhere, periodId: ctx.period.id, type: "IN" },
@@ -52,9 +54,14 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                 </Field>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Jumlah"><input name="qty" type="number" min={1} required className={`${inputCls} font-mono`} /></Field>
-                  <Field label="No. Dokumen (opsional)"><input name="refNo" className={`${inputCls} font-mono`} placeholder="SJ-..." /></Field>
+                  <Field label="Keperluan"><input name="refNo" className={inputCls} placeholder="Keperluan penerimaan..." /></Field>
                 </div>
-                <Field label="Catatan"><input name="note" className={inputCls} placeholder="Catatan penerimaan..." /></Field>
+                <Field label="Keterangan"><input name="note" className={inputCls} placeholder="Keterangan penerimaan..." /></Field>
+                <ImageUploadInput
+                  name="photo"
+                  label="Foto Nota / Invoice / Bukti (Opsional)"
+                  helper="Lampirkan foto nota, invoice, atau bukti penerimaan (JPG, PNG, WebP)."
+                />
                 <div className="pt-2"><button className={`${btnPrimary} w-full sm:w-auto`}>Simpan Penerimaan</button></div>
               </form>
             </FormDialog>
@@ -63,7 +70,7 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
       />
 
       <div className="space-y-5">
-        <Panel title={`Menunggu Penerimaan Fisik (In Transit): ${transit.length}`}>
+        <Panel title={`Menunggu Penerimaan Fisik: ${transit.length}`}>
           <div className={tableWrap + " !border-0"}>
             <table className={table}>
               <thead>
@@ -73,8 +80,6 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                   <th className={th}>No. PO</th>
                   <th className={th}>Site</th>
                   <th className={`${th} text-right`}>Qty</th>
-                  <th className={th}>Resi / SJ</th>
-                  <th className={th}>ETA</th>
                   {ctx.isAdmin && <th className={th}>Aksi</th>}
                 </tr>
               </thead>
@@ -119,8 +124,6 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                           </div>
                         )}
                       </td>
-                      <td className={`${td} font-mono text-xs text-slate-500`}>{p.trackingNo ?? "-"}</td>
-                      <td className={`${td} font-mono text-xs text-slate-500`}>{fmtDate(p.eta)}</td>
                       {ctx.isAdmin && (
                         <td className={td}>
                           {isNewWithoutMaster ? (
@@ -238,7 +241,7 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                     </tr>
                   );
                 })}
-                {!transit.length && <Empty cols={8} text="Tidak ada barang dalam pengiriman." />}
+                {!transit.length && <Empty cols={6} text="Tidak ada pesanan yang menunggu penerimaan fisik." />}
               </tbody>
             </table>
           </div>
@@ -254,15 +257,28 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
                   <th className={th}>Site</th>
                   <th className={`${th} text-right`}>Qty</th>
                   <th className={`${th} text-right`}>Saldo</th>
-                  <th className={th}>Referensi</th>
-                  <th className={th}>Catatan</th>
+                  <th className={th}>Keperluan / Ref</th>
+                  <th className={th}>Keterangan</th>
                   <th className={th}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {moves.map((m) => (
                   <tr key={m.id} className="group hover:bg-slate-50/70 transition-colors">
-                    <td className={`${td} ${stickyTd} font-semibold text-slate-900`}>{m.item.name}</td>
+                    <td className={`${td} ${stickyTd}`}>
+                      <div className="font-semibold text-slate-900">{m.item.name}</div>
+                      {m.photoUrl && (
+                        <a
+                          href={m.photoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-slate-50 transition-colors shadow-2xs mt-1"
+                        >
+                          <Camera className="h-3 w-3" />
+                          <span>Foto Nota / Invoice</span>
+                        </a>
+                      )}
+                    </td>
                     <td className={`${td} font-mono text-xs text-slate-500`}>{fmtDateTime(m.createdAt)}</td>
                     <td className={td}>{siteLabel(m.siteId)}</td>
                     <td className={`${td} text-right font-mono text-emerald-600 font-semibold`}>+{num(m.qty)}</td>

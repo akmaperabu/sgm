@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -104,6 +104,7 @@ model StockMovement {
   refType   String?  @map("ref_type") // PR | GI | MANUAL | ADJUSTMENT | MAINTENANCE
   refNo     String?  @map("ref_no")
   note      String?
+  photoUrl  String?  @map("photo_url")
   createdBy String?  @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -140,7 +141,7 @@ model GoodsIssue {
   @@map("goods_issues")
 }
 
-// Purchase Request: Submitted -> Approved -> On Process -> In Transit -> Complete
+// Purchase Request: Submitted -> Approved -> On Process -> Complete
 model PurchaseRequest {
   id              String    @id @default(cuid())
   prNumber        String    @unique @map("pr_number")
@@ -154,7 +155,7 @@ model PurchaseRequest {
   qty             Int
   notes           String?
   photoUrl        String?   @map("photo_url")
-  status          String    @default("Submitted") // Submitted | Approved | Rejected | On Process | In Transit | Complete
+  status          String    @default("Submitted") // Submitted | Approved | Rejected | On Process | Complete
   estimatedPrice  Float?    @map("estimated_price")
   totalPrice      Float?    @map("total_price")
   receivedQty     Int       @default(0) @map("received_qty")

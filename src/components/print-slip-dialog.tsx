@@ -7,18 +7,18 @@ import { btnPrimary } from "./ui";
 
 export interface SlipDetail {
   docNumber: string;
-  docTitle: string; // "BUKTI PENGELUARAN BARANG (GOODS ISSUE)" | "BUKTI PENERIMAAN BARANG (GOODS RECEIPT)"
+  docTitle: string;
   date: string;
   siteName: string;
-  requesterLabel: string;
+  requesterLabel?: string;
   requesterValue: string;
-  officerName: string;
-  purposeOrRefLabel: string;
-  purposeOrRefValue: string;
+  officerName?: string;
+  purposeOrRefLabel?: string;
+  purposeOrRefValue?: string;
   items: Array<{
-    code: string;
+    code?: string;
     name: string;
-    category: string;
+    category?: string;
     unit: string;
     qty: number;
   }>;
@@ -119,6 +119,15 @@ export function PrintSlipDialog({
   };
 
   const hasThirdSig = Boolean(detail.signatures.thirdTitle);
+
+  const fourDigitNo = (() => {
+    const match = detail.docNumber.match(/(\d{4})(?!.*\d)/);
+    if (match) return match[1];
+    const digits = detail.docNumber.replace(/\D/g, "");
+    return digits ? digits.slice(-4).padStart(4, "0") : "0001";
+  })();
+
+  const dateOnly = detail.date ? detail.date.split(" ")[0] : "-";
 
   const modalContent = open ? (
     <div
@@ -258,18 +267,12 @@ export function PrintSlipDialog({
                     <p className="text-[11px] font-bold text-black uppercase tracking-wide mt-0.5">
                       Support Goods &amp; Maintenance (SGM) System
                     </p>
-                    <p className="text-[10px] text-black mt-0.5">
-                      Site Operasional: <span className="font-bold">{detail.siteName}</span>
-                    </p>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="inline-block border-2 border-black px-2.5 py-1 text-[9.5px] font-mono font-black uppercase tracking-wider text-black">
-                    FORM DOKUMEN RESMI
+                  <span className="inline-block border-2 border-black px-3 py-1 text-xs font-mono font-black uppercase tracking-wider text-black">
+                    {fourDigitNo}
                   </span>
-                  <p className="text-[9.5px] font-mono text-black mt-1.5">
-                    Waktu Cetak: {new Date().toLocaleString("id-ID")}
-                  </p>
                 </div>
               </div>
               {/* Garis Ganda Kop Surat Resmi Perusahaan */}
@@ -278,85 +281,49 @@ export function PrintSlipDialog({
             </div>
 
             {/* Judul Dokumen */}
-            <div className="text-center my-2">
+            <div className="text-center my-2.5">
               <h2 className="text-xs sm:text-sm font-black tracking-wide uppercase text-black underline decoration-1 underline-offset-2">
                 {detail.docTitle}
               </h2>
-              <div className="mt-0.5 font-mono text-xs font-bold text-black break-words">
-                NO: {detail.docNumber}
-              </div>
             </div>
 
-            {/* Rincian Dokumen (Metadata) - Compact & Tanpa Pemotongan Info */}
+            {/* Rincian Dokumen (Metadata) */}
             <div className="border border-black rounded-xs mb-2.5 text-[11px] divide-y divide-black bg-white">
-              {/* Baris 1: Tanggal & Site */}
-              <div className="grid grid-cols-2 divide-x divide-black">
-                <div className="flex items-start py-1 px-2.5">
-                  <span className="w-28 text-black font-bold shrink-0">Tanggal Dokumen</span>
-                  <span className="text-black font-semibold break-words flex-1">: {detail.date}</span>
-                </div>
-                <div className="flex items-start py-1 px-2.5">
-                  <span className="w-28 text-black font-bold shrink-0">Site Operasional</span>
-                  <span className="text-black font-semibold break-words flex-1">: {detail.siteName}</span>
-                </div>
+              <div className="flex items-start py-1 px-2.5">
+                <span className="w-32 text-black font-bold shrink-0">Tanggal PR</span>
+                <span className="text-black font-semibold break-words flex-1">: {dateOnly}</span>
               </div>
-
-              {/* Baris 2: Pemohon/Penerima & Petugas */}
-              <div className="grid grid-cols-2 divide-x divide-black">
-                <div className="flex items-start py-1 px-2.5">
-                  <span className="w-28 text-black font-bold shrink-0">
-                    {detail.requesterLabel || "Pemohon (Requester)"}
-                  </span>
-                  <span className="text-black font-semibold break-words flex-1">
-                    : {detail.requesterValue || "-"}
-                  </span>
-                </div>
-                <div className="flex items-start py-1 px-2.5">
-                  <span className="w-28 text-black font-bold shrink-0">Petugas Terkait</span>
-                  <span className="text-black font-semibold break-words flex-1">: {detail.officerName || "-"}</span>
-                </div>
+              <div className="flex items-start py-1 px-2.5">
+                <span className="w-32 text-black font-bold shrink-0">Nama Pemohon</span>
+                <span className="text-black font-semibold break-words flex-1">: {detail.requesterValue || "-"}</span>
               </div>
-
-              {/* Baris 3: Keterangan / Keperluan / No. PO (Full Width, Zero Truncation!) */}
-              <div className="flex items-start py-1.5 px-2.5 bg-neutral-50/60">
-                <span className="w-28 text-black font-bold shrink-0">{detail.purposeOrRefLabel}</span>
-                <span className="text-black font-semibold break-words flex-1 leading-normal">
-                  : {detail.purposeOrRefValue || "-"}
-                </span>
+              <div className="flex items-start py-1 px-2.5">
+                <span className="w-32 text-black font-bold shrink-0">Site Operasional</span>
+                <span className="text-black font-semibold break-words flex-1">: {detail.siteName}</span>
               </div>
             </div>
 
-            {/* Tabel Barang - Hitam Semua & Compact */}
+            {/* Tabel Barang - Tanpa Kode & Kategori */}
             <table className="w-full border-collapse border border-black text-[11px] my-2.5">
               <thead>
                 <tr className="bg-neutral-100 text-black border-b border-black">
-                  <th className="border border-black px-2 py-1 text-center w-7 font-bold">No</th>
-                  <th className="border border-black px-2 py-1 text-left w-24 font-bold">Kode</th>
+                  <th className="border border-black px-2 py-1 text-center w-8 font-bold">No</th>
                   <th className="border border-black px-2 py-1 text-left font-bold">Nama Barang / Spesifikasi</th>
-                  <th className="border border-black px-2 py-1 text-center w-20 font-bold">Kategori</th>
-                  <th className="border border-black px-2 py-1 text-right w-14 font-bold">Qty</th>
-                  <th className="border border-black px-2 py-1 text-center w-14 font-bold">Satuan</th>
+                  <th className="border border-black px-2 py-1 text-right w-16 font-bold">Qty</th>
+                  <th className="border border-black px-2 py-1 text-center w-16 font-bold">Satuan</th>
                 </tr>
               </thead>
               <tbody>
                 {detail.items.map((it, idx) => (
                   <tr key={idx} className="border-b border-black">
                     <td className="border border-black px-2 py-1 text-center font-mono text-black">{idx + 1}</td>
-                    <td className="border border-black px-2 py-1 font-mono text-[10.5px] font-bold text-black break-words">{it.code}</td>
                     <td className="border border-black px-2 py-1 font-medium text-black break-words leading-tight">{it.name}</td>
-                    <td className="border border-black px-2 py-1 text-center text-black">{it.category}</td>
                     <td className="border border-black px-2 py-1 text-right font-mono font-bold text-black">{it.qty}</td>
                     <td className="border border-black px-2 py-1 text-center text-black">{it.unit}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
-            {detail.notes && (
-              <div className="text-[10px] text-black mb-2.5 border border-black bg-neutral-50/50 p-2 rounded-xs break-words">
-                <span className="font-bold">Catatan:</span> {detail.notes}
-              </div>
-            )}
 
             {/* Area Tanda Tangan Resmi - Tanpa Kotak Border, Lahan TTD Nyaman (h-28) */}
             <div className={`${hasThirdSig ? "grid grid-cols-3 gap-6" : "grid grid-cols-2 gap-16 max-w-lg mx-auto"} text-center mt-6 text-xs`}>

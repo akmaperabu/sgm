@@ -59,10 +59,7 @@ export interface AssetLifespanInfo {
   isNearEnd: boolean;
 }
 
-/**
- * Menghitung usia berjalan alat, target masa pakai (termasuk perpanjangan kalibrasi/rekondisi),
- * sisa waktu, persentase aus, dan status evaluasi.
- */
+
 export function getAssetLifespanInfo(
   purchaseDate?: Date | string | null,
   lifespanMonths?: number | null,
@@ -89,8 +86,8 @@ export function getAssetLifespanInfo(
         ? `${years} thn ${remainingMonths} bln`
         : `${years} thn`
       : monthsAge === 0
-      ? "< 1 bln"
-      : `${remainingMonths} bln`;
+        ? "< 1 bln"
+        : `${remainingMonths} bln`;
 
   if (!lifespanMonths || lifespanMonths <= 0) {
     return {

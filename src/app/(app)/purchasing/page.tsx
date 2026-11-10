@@ -11,26 +11,26 @@ import { Badge, Empty, Field, StatusBadge, btnDanger, btnPrimary, inputCls, sele
 import { ITEM_CATEGORIES, PR_FLOW, categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDate, num } from "@/lib/format";
 import { advancePurchase } from "@/actions/goods";
-import { Camera, CheckCircle2, Clock, PackageCheck, Truck, XCircle, Eye, Printer } from "lucide-react";
+import { Camera, CheckCircle2, Clock, PackageCheck, XCircle, Eye, Printer } from "lucide-react";
 
 function Progress({ status }: { status: string }) {
-  const idx = PR_FLOW.indexOf(status as (typeof PR_FLOW)[number]);
+  const normalizedStatus = status === "In Transit" ? "On Process" : status;
+  const idx = PR_FLOW.indexOf(normalizedStatus as (typeof PR_FLOW)[number]);
   if (status === "Rejected") return <span className="text-xs font-semibold text-rose-700">Ditolak</span>;
   if (status === "Partially Received") {
     return (
-      <div className="flex items-center gap-1" title="Diterima Sebagian (3.5/5)">
+      <div className="flex items-center gap-1" title="Diterima Sebagian (3.5/4)">
         <span className="h-1.5 w-3.5 rounded-full bg-blue-700" />
         <span className="h-1.5 w-3.5 rounded-full bg-blue-700" />
         <span className="h-1.5 w-3.5 rounded-full bg-blue-700" />
         <span className="h-1.5 w-3.5 rounded-full bg-amber-500 animate-pulse" />
-        <span className="h-1.5 w-3.5 rounded-full bg-slate-200" />
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-1" title={`${idx + 1}/5 - ${status}`}>
+    <div className="flex items-center gap-1" title={`${idx + 1}/${PR_FLOW.length} - ${normalizedStatus}`}>
       {PR_FLOW.map((s, i) => (
-        <span key={s} className={`h-1.5 w-3.5 rounded-full ${i <= idx ? (idx === 4 ? "bg-emerald-600" : "bg-blue-700") : "bg-slate-200"}`} />
+        <span key={s} className={`h-1.5 w-3.5 rounded-full ${i <= idx ? (idx === PR_FLOW.length - 1 ? "bg-emerald-600" : "bg-blue-700") : "bg-slate-200"}`} />
       ))}
     </div>
   );
@@ -60,21 +60,24 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
     ALL: allPrs.length,
     Submitted: allPrs.filter((p) => p.status === "Submitted").length,
     Approved: allPrs.filter((p) => p.status === "Approved").length,
-    "On Process": allPrs.filter((p) => p.status === "On Process").length,
-    "In Transit": allPrs.filter((p) => p.status === "In Transit").length,
+    "On Process": allPrs.filter((p) => p.status === "On Process" || p.status === "In Transit").length,
     "Partially Received": allPrs.filter((p) => p.status === "Partially Received").length,
     Complete: allPrs.filter((p) => p.status === "Complete").length,
     Rejected: allPrs.filter((p) => p.status === "Rejected").length,
   };
 
-  const prs = currentStatus === "ALL" ? allPrs : allPrs.filter((p) => p.status === currentStatus);
+  const prs =
+    currentStatus === "ALL"
+      ? allPrs
+      : currentStatus === "On Process"
+        ? allPrs.filter((p) => p.status === "On Process" || p.status === "In Transit")
+        : allPrs.filter((p) => p.status === currentStatus);
 
   const tabs = [
     { id: "ALL", label: "Semua", count: statusCounts.ALL },
     { id: "Submitted", label: "Perlu Approval", count: statusCounts.Submitted, alert: statusCounts.Submitted > 0 },
     { id: "Approved", label: "Siap Buat PO", count: statusCounts.Approved },
     { id: "On Process", label: "Proses Pesanan", count: statusCounts["On Process"] },
-    { id: "In Transit", label: "Dalam Pengiriman", count: statusCounts["In Transit"] },
     { id: "Partially Received", label: "Diterima Sebagian", count: statusCounts["Partially Received"] },
     { id: "Complete", label: "Selesai", count: statusCounts.Complete },
     { id: "Rejected", label: "Ditolak", count: statusCounts.Rejected },
@@ -92,11 +95,11 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
     <>
       <PageHeader
         ctx={ctx}
-        title="Pembelian & Tracking (PR/PO Status)"
-        desc="Kelola pengajuan pembelian, penerbitan PO, dan pelacakan pengiriman barang."
+        title="Permintaan Barang"
+        desc="Kelola pengajuan permintaan barang, penerbitan PO, dan penerimaan fisik barang."
         actions={
           !ctx.readOnly ? (
-            <FormDialog label="Request Beli Barang" title="Purchase Request Baru">
+            <FormDialog label="Request Beli Barang" title="Permintaan Barang Baru">
               <PurchaseRequestForm
                 isAdmin={ctx.isAdmin}
                 defaultSite={ctx.writeSite}
@@ -149,7 +152,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
               <th className={th}>Progres</th>
               <th className={th}>Status</th>
               <th className={th}>No. PO</th>
-              <th className={th}>Resi / ETA</th>
               <th className={th}>Aksi</th>
             </tr>
           </thead>
@@ -158,37 +160,26 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
               const name = p.item?.name ?? p.newItemName;
               const remaining = Math.max(0, p.qty - p.receivedQty);
               const isPartial = p.status === "Partially Received" || (p.receivedQty > 0 && p.receivedQty < p.qty);
+              const prSeqNo = p.prNumber.match(/(\d{4})$/)?.[1] ?? p.prNumber;
 
               const slipDetail = {
-                docNumber: p.poNumber ? `${p.prNumber} / ${p.poNumber}` : p.prNumber,
-                docTitle: p.poNumber ? "PURCHASE ORDER & PERMINTAAN PENGADAAN (PR/PO SLIP)" : "SURAT PERMINTAAN PEMBELIAN (PURCHASE REQUEST SLIP)",
+                docNumber: prSeqNo,
+                docTitle: "PERMINTAAN BARANG SUPPORT",
                 date: fmtDate(p.createdAt),
                 siteName: siteLabel(p.siteId),
-                requesterLabel: "Pemohon (Requester)",
                 requesterValue: p.requester.name,
-                officerName: "Staff Procurement / Purchasing",
-                purposeOrRefLabel: "Keterangan / PO & Resi",
-                purposeOrRefValue: [
-                  p.poNumber ? `No. PO: ${p.poNumber}` : null,
-                  `Status: ${p.status}`,
-                  p.trackingNo ? `No. Resi/SJ: ${p.trackingNo}` : null,
-                  p.notes ? `Catatan: ${p.notes}` : null,
-                ].filter(Boolean).join(" • "),
                 items: [
                   {
-                    code: p.item?.code ?? p.newItemCode ?? "ITEM-BARU",
                     name: name ?? "Barang Pengadaan",
-                    category: categoryLabel(p.item?.category ?? p.newItemCategory),
                     unit: p.item?.unit ?? "pcs",
                     qty: p.qty,
                   },
                 ],
-                notes: p.notes,
                 signatures: {
                   firstTitle: "Diajukan Oleh",
-                  firstName: `${p.requester.name} (Pemohon)`,
+                  firstName: p.requester.name,
                   secondTitle: "Disetujui Oleh",
-                  secondName: "Staff Procurement",
+                  secondName: "Procurement",
                 },
               };
 
@@ -227,8 +218,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
 
                   <DetailSection title="Data Pemrosesan & PO">
                     <DetailItem label="Nomor PO" value={<span className="font-mono text-slate-800">{p.poNumber || "-"}</span>} />
-                    <DetailItem label="Nomor Resi / Surat Jalan" value={<span className="font-mono text-slate-800">{p.trackingNo || "-"}</span>} />
-                    <DetailItem label="Estimasi Tiba (ETA)" value={p.eta ? fmtDate(p.eta) : "-"} />
                     <DetailItem label="Tanggal Disetujui" value={fmtDate(p.approvedAt)} />
                     <DetailItem label="Diterima di Gudang" value={fmtDate(p.receivedAt)} />
                   </DetailSection>
@@ -295,7 +284,6 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                   <td className={`${td} text-xs`}>
                     <span className="font-mono text-slate-800 font-medium">{p.poNumber ?? "-"}</span>
                   </td>
-                  <td className={`${td} text-xs`}><span className="font-mono text-slate-800 font-medium">{p.trackingNo ?? "-"}</span><div className="font-mono text-slate-400 mt-0.5">{p.eta ? fmtDate(p.eta) : ""}</div></td>
                   <td className={td}>
                     <RowActionMenu>
                       <ViewDetailDialog
@@ -418,27 +406,7 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                             </>
                           )}
 
-                          {p.status === "On Process" && (
-                            <FormDialog
-                              title={`Pengiriman ${p.prNumber}`}
-                              trigger={
-                                <div className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors">
-                                  <Truck className="h-3.5 w-3.5 shrink-0" />
-                                  <span>Set In Transit (No Resi/ETA)</span>
-                                </div>
-                              }
-                            >
-                              <form action={advancePurchase} className="grid gap-3">
-                                <input type="hidden" name="id" value={p.id} />
-                                <input type="hidden" name="step" value="transit" />
-                                <Field label="Estimasi Tanggal Tiba"><input name="eta" type="date" className={`${inputCls} font-mono`} /></Field>
-                                <Field label="No. Resi / Surat Jalan"><input name="trackingNo" className={`${inputCls} font-mono`} placeholder="SJ-..." /></Field>
-                                <div><button className={btnPrimary}>Set In Transit</button></div>
-                              </form>
-                            </FormDialog>
-                          )}
-
-                          {(p.status === "In Transit" || p.status === "Partially Received") && (
+                          {(p.status === "On Process" || p.status === "In Transit" || p.status === "Partially Received") && (
                             p.isNewItem && !p.itemId ? (
                               <FormDialog
                                 title={`Registrasi & Terima (${p.prNumber})`}
@@ -514,7 +482,7 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
                 </tr>
               );
             })}
-            {!prs.length && <Empty cols={11} text="Belum ada pengajuan pembelian pada filter ini." />}
+            {!prs.length && <Empty cols={10} text="Belum ada pengajuan permintaan barang pada filter ini." />}
           </tbody>
         </table>
       </div>

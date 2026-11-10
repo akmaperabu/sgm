@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Download, Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Download, Search, ChevronLeft, ChevronRight, Eye, Camera } from "lucide-react";
 import { Badge, Empty, btnSecondary, inputCls, selectCls, table, tableWrap, td, th } from "./ui";
 import { ViewDetailDialog, DetailSection, DetailItem } from "./view-detail-dialog";
 import { categoryLabel, siteLabel } from "@/lib/constants";
@@ -16,6 +16,7 @@ export type MovementItem = {
   refType: string | null;
   refNo: string | null;
   note: string | null;
+  photoUrl?: string | null;
   siteId: string;
   item: {
     code: string;
@@ -231,8 +232,8 @@ export function TransactionHistoryTable({
                       setCurrentPage(1);
                     }}
                     className={`rounded-lg px-2 sm:px-2 py-1 text-xs font-semibold transition-colors ${active
-                        ? "bg-white text-blue-700 shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
+                      ? "bg-white text-blue-700 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
                       }`}
                   >
                     {size === "ALL" ? "All" : size}
@@ -318,8 +319,19 @@ export function TransactionHistoryTable({
 
                   <DetailSection title="Referensi Dokumen & Keterangan">
                     <DetailItem label="Tipe Referensi" value={m.refType || "-"} />
-                    <DetailItem label="Nomor Dokumen / Ref" value={<span className="font-mono text-slate-800">{m.refNo || "-"}</span>} />
-                    <DetailItem label="Catatan Transaksi" value={m.note || "-"} span2 />
+                    <DetailItem label="Keperluan / No. Ref" value={<span className="font-mono text-slate-800">{m.refNo || "-"}</span>} />
+                    <DetailItem label="Keterangan Transaksi" value={m.note || "-"} span2 />
+                    {m.photoUrl && (
+                      <DetailItem
+                        label="Lampiran Nota / Invoice"
+                        value={
+                          <a href={m.photoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium">
+                            <Camera className="h-3.5 w-3.5" /> Lihat Foto Nota / Invoice
+                          </a>
+                        }
+                        span2
+                      />
+                    )}
                   </DetailSection>
                 </div>
               );
@@ -368,7 +380,18 @@ export function TransactionHistoryTable({
                     </span>
                   </td>
                   <td className={`${td} text-xs text-slate-600 max-w-64 leading-relaxed`}>
-                    {m.note || "-"}
+                    <div>{m.note || "-"}</div>
+                    {m.photoUrl && (
+                      <a
+                        href={m.photoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-slate-50 transition-colors shadow-2xs mt-1"
+                      >
+                        <Camera className="h-3 w-3" />
+                        <span>Foto Nota</span>
+                      </a>
+                    )}
                   </td>
                   <td className={`${td} text-xs text-slate-600`}>
                     {m.user?.name || "-"}
@@ -448,8 +471,8 @@ export function TransactionHistoryTable({
                         type="button"
                         onClick={() => setCurrentPage(p)}
                         className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-semibold transition-all ${isCur
-                            ? "bg-blue-700 text-white shadow-xs"
-                            : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          ? "bg-blue-700 text-white shadow-xs"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                           }`}
                       >
                         {p}

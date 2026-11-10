@@ -23,7 +23,7 @@ export const ASSET_CATEGORIES = [
 export const assetCategoryLabel = (id?: string | null) =>
   ASSET_CATEGORIES.find((c) => c.id === id)?.label ?? id ?? "-";
 
-export const PR_FLOW = ["Submitted", "Approved", "On Process", "In Transit", "Complete"] as const;
+export const PR_FLOW = ["Submitted", "Approved", "On Process", "Complete"] as const;
 export const URGENCIES = ["Low", "Medium", "High", "Critical"] as const;
 
 /** Jumlah hari sebelum jatuh tempo ketika tiket rutin muncul (H-7). */
