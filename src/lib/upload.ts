@@ -22,7 +22,7 @@ export async function saveUploadedFile(file: unknown, folder = "uploads"): Promi
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       const filePath = `${folder}/${safeName}`;
-      const contentType = f.type || "image/jpeg";
+      const contentType = f.type || (ext === ".webp" ? "image/webp" : "image/jpeg");
 
       const { error } = await supabase.storage.from("sgm-uploads").upload(filePath, buffer, {
         contentType,
