@@ -11,8 +11,9 @@ export type SearchParams = Promise<Record<string, string | undefined>>;
  * dan periode (USER hanya periode aktif, ADMIN bisa membuka arsip via ?period=YYYY-MM).
  */
 export async function getCtx(sp: Record<string, string | undefined> = {}) {
-  const [user, active, periods] = await Promise.all([
-    requireUser(),
+  // Pastikan user sudah login terlebih dahulu sebelum query database
+  const user = await requireUser();
+  const [active, periods] = await Promise.all([
     ensureActivePeriod(),
     getPeriods(),
   ]);
