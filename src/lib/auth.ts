@@ -40,7 +40,10 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret());
-    const u = await prisma.user.findUnique({ where: { id: String(payload.uid) } });
+    const u = await prisma.user.findUnique({
+      where: { id: String(payload.uid) },
+      select: { id: true, name: true, email: true, role: true, siteId: true, isActive: true },
+    });
     if (!u || !u.isActive) return null;
     return { id: u.id, name: u.name, email: u.email, role: u.role as "USER" | "ADMIN", siteId: u.siteId };
   } catch {

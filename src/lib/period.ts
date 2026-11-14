@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "./db";
 import { pad } from "./format";
+import { getCachedPeriods, invalidatePeriodsCache } from "./cache";
 
 async function resolveActivePeriod(now = new Date()) {
   const name = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
@@ -39,6 +40,7 @@ async function resolveActivePeriod(now = new Date()) {
           closingStock: i.currentStock,
         }));
       if (data.length) await tx.inventoryStockCard.createMany({ data });
+      invalidatePeriodsCache();
       return period;
     });
   } catch {
@@ -61,7 +63,7 @@ export async function ensureActivePeriod(now?: Date) {
 
 export const getPeriods = cache(async () => {
   await ensureActivePeriod();
-  return prisma.period.findMany({ orderBy: { startDate: "desc" } });
+  return getCachedPeriods();
 });
 
 export async function nextNumber(prefix: "GI" | "PR" | "MT", periodName: string) {

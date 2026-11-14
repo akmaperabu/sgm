@@ -9,6 +9,7 @@ import { firstOccurrence } from "@/lib/format";
 import { int, opt, req, run, str } from "@/lib/action-utils";
 import { ASSET_CATEGORIES, SITES, URGENCIES } from "@/lib/constants";
 import { saveUploadedFile } from "@/lib/upload";
+import { invalidateAssetsCache } from "@/lib/cache";
 
 async function syncAssetScheduleChange(assetId: string, intervalMonths: number, scheduleDay: number) {
   const newDue = firstOccurrence(new Date(), scheduleDay);
@@ -134,6 +135,7 @@ export async function updateSchedule(fd: FormData) {
     if (intervalMonths < 1 || intervalMonths > 24) throw new Error("Interval 1-24 bulan.");
     if (scheduleDay < 1 || scheduleDay > 31) throw new Error("Tanggal 1-31.");
     await syncAssetScheduleChange(asset.id, intervalMonths, scheduleDay);
+    invalidateAssetsCache();
   }, "Pengaturan jadwal disimpan.");
 }
 
@@ -170,6 +172,7 @@ export async function saveAsset(fd: FormData) {
       if (intervalMonths !== existing.intervalMonths || scheduleDay !== existing.scheduleDay) {
         await syncAssetScheduleChange(id, intervalMonths, scheduleDay);
       }
+      invalidateAssetsCache();
       return;
     }
     const siteId = req(fd, "siteId", "Site");
@@ -193,6 +196,7 @@ export async function saveAsset(fd: FormData) {
       },
     });
     await syncPreventiveTickets();
+    invalidateAssetsCache();
   });
 }
 
@@ -214,6 +218,7 @@ export async function recordCalibrationOrExtension(fd: FormData) {
         calibrationNotes: notes,
       },
     });
+    invalidateAssetsCache();
   }, "Data kalibrasi / rekondisi berhasil disimpan.");
 }
 
@@ -222,6 +227,7 @@ export async function toggleAsset(fd: FormData) {
   await run("/maintenance/assets", async () => {
     const a = await prisma.asset.findUniqueOrThrow({ where: { id: req(fd, "id") } });
     await prisma.asset.update({ where: { id: a.id }, data: { isActive: !a.isActive } });
+    invalidateAssetsCache();
   }, "Status aset diperbarui.");
 }
 

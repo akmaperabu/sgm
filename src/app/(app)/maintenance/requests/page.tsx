@@ -8,6 +8,7 @@ import { Badge, Empty, Field, StatusBadge, btnDanger, btnPrimary, inputCls, sele
 import { URGENCIES, assetCategoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { handleRepair, requestRepair } from "@/actions/maintenance";
+import { getCachedActiveAssets } from "@/lib/cache";
 import { Camera, CheckCircle2, Wrench, XCircle, Eye } from "lucide-react";
 import { ImageUploadInput } from "@/components/image-upload-input";
 import { ImagePreviewDialog } from "@/components/image-preview-dialog";
@@ -27,16 +28,14 @@ export default async function RepairRequestsPage({ searchParams }: { searchParam
         ...(ctx.period.isActive ? [{ status: { in: ["Open", "In Progress"] } }] : []),
       ],
     },
-    include: { asset: true, requester: true },
+    include: {
+      asset: true,
+      requester: { select: { id: true, name: true, email: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
   const canEdit = ctx.isAdmin && !ctx.readOnly;
-  const assets = ctx.readOnly
-    ? []
-    : await prisma.asset.findMany({
-      where: { ...ctx.siteWhere, isActive: true },
-      orderBy: [{ siteId: "asc" }, { category: "asc" }, { code: "asc" }],
-    });
+  const assets = ctx.readOnly ? [] : await getCachedActiveAssets(ctx.site);
 
   return (
     <>

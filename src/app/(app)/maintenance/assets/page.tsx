@@ -21,6 +21,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Searc
     include: {
       tickets: {
         where: { status: { in: ["Open", "In Progress", "Upcoming"] } },
+        select: { id: true, number: true, type: true, status: true, dueDate: true, createdAt: true },
       },
       _count: {
         select: {

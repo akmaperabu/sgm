@@ -28,6 +28,8 @@ model User {
   purchaseRequests PurchaseRequest[]
   tickets         MaintenanceTicket[]
 
+  @@index([siteId, role])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -45,6 +47,8 @@ model Period {
   issues     GoodsIssue[]
   purchases  PurchaseRequest[]
 
+  @@index([isActive])
+  @@index([startDate, endDate])
   @@map("periods")
 }
 
@@ -68,6 +72,8 @@ model InventoryItem {
 
   @@unique([siteId, code])
   @@index([siteId, category])
+  @@index([siteId, isActive])
+  @@index([code])
   @@map("inventory_items")
 }
 
@@ -89,6 +95,8 @@ model InventoryStockCard {
 
   @@unique([itemId, periodId])
   @@index([siteId, periodId])
+  @@index([periodId])
+  @@index([itemId])
   @@map("inventory_stock_cards")
 }
 
@@ -112,6 +120,10 @@ model StockMovement {
   period Period        @relation(fields: [periodId], references: [id])
 
   @@index([siteId, periodId, type])
+  @@index([itemId])
+  @@index([periodId])
+  @@index([createdAt])
+  @@index([createdBy])
   @@map("stock_movements")
 }
 
@@ -138,6 +150,10 @@ model GoodsIssue {
   ticket    MaintenanceTicket? @relation(fields: [ticketId], references: [id])
 
   @@index([siteId, periodId, status])
+  @@index([requestedBy])
+  @@index([itemId])
+  @@index([ticketId])
+  @@index([createdAt])
   @@map("goods_issues")
 }
 
@@ -177,6 +193,11 @@ model PurchaseRequest {
   vendorRelation Vendor?        @relation(fields: [vendorId], references: [id])
 
   @@index([siteId, periodId, status])
+  @@index([siteId, status])
+  @@index([requestedBy])
+  @@index([itemId])
+  @@index([vendorId])
+  @@index([createdAt])
   @@map("purchase_requests")
 }
 
@@ -217,6 +238,8 @@ model Asset {
   tickets MaintenanceTicket[]
 
   @@unique([siteId, code])
+  @@index([siteId, category, isActive])
+  @@index([isActive, nextDueDate])
   @@map("assets")
 }
 
@@ -244,5 +267,9 @@ model MaintenanceTicket {
 
   @@unique([assetId, type, dueDate])
   @@index([siteId, type, status])
+  @@index([requestedBy])
+  @@index([assetId])
+  @@index([dueDate])
+  @@index([createdAt])
   @@map("maintenance_tickets")
 }

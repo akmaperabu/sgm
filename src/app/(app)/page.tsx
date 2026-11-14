@@ -13,27 +13,59 @@ export default async function Dashboard({ searchParams }: { searchParams: Search
   const w = ctx.siteWhere;
   const today = new Date();
 
-  const [items, prs, tickets, pendingIssues, cards] = await Promise.all([
-    prisma.inventoryItem.findMany({ where: { ...w, isActive: true } }),
+  const [items, prs, tickets, pendingIssues, cardAgg] = await Promise.all([
+    prisma.inventoryItem.findMany({
+      where: { ...w, isActive: true },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        category: true,
+        siteId: true,
+        currentStock: true,
+        minStock: true,
+      },
+    }),
     prisma.purchaseRequest.findMany({
       where: { ...w, status: { notIn: ["Complete", "Rejected"] } },
-      include: { item: true },
+      select: {
+        id: true,
+        prNumber: true,
+        siteId: true,
+        status: true,
+        qty: true,
+        isNewItem: true,
+        newItemName: true,
+        item: { select: { name: true } },
+        createdAt: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
     prisma.maintenanceTicket.findMany({
       where: { ...w, status: { in: ["Upcoming", "Open", "In Progress"] } },
-      include: { asset: true },
+      select: {
+        id: true,
+        siteId: true,
+        type: true,
+        status: true,
+        dueDate: true,
+        createdAt: true,
+        asset: { select: { code: true, name: true, category: true } },
+      },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
       take: 8,
     }),
     prisma.goodsIssue.count({ where: { ...w, status: "Pending Approval" } }),
-    prisma.inventoryStockCard.findMany({ where: { ...w, periodId: ctx.period.id } }),
+    prisma.inventoryStockCard.aggregate({
+      where: { ...w, periodId: ctx.period.id },
+      _sum: { qtyIn: true, qtyOut: true },
+    }),
   ]);
 
   const low = items.filter((i) => i.currentStock <= i.minStock).sort((a, b) => a.currentStock - b.currentStock);
-  const totIn = cards.reduce((s, c) => s + c.qtyIn, 0);
-  const totOut = cards.reduce((s, c) => s + c.qtyOut, 0);
+  const totIn = cardAgg._sum.qtyIn ?? 0;
+  const totOut = cardAgg._sum.qtyOut ?? 0;
   const totalStock = items.reduce((s, i) => s + i.currentStock, 0);
   const overdue = tickets.filter((t) => t.type === "PREVENTIVE" && t.dueDate && t.dueDate < today && daysBetween(today, t.dueDate) < 0).length;
 

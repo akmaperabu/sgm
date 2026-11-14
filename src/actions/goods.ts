@@ -7,6 +7,7 @@ import { createCardForNewItem, moveStock } from "@/lib/stock";
 import { int, opt, req, run, str } from "@/lib/action-utils";
 import { ITEM_CATEGORIES, SITES } from "@/lib/constants";
 import { saveUploadedFile } from "@/lib/upload";
+import { invalidateItemsCache } from "@/lib/cache";
 
 const validSite = (s: string) => {
   if (!SITES.some((x) => x.id === s)) throw new Error("Site tidak valid.");
@@ -46,6 +47,7 @@ export async function saveItem(fd: FormData) {
     if (minStock < 0) throw new Error("Stok minimum tidak boleh negatif.");
     if (id) {
       await prisma.inventoryItem.update({ where: { id }, data: { name, category, unit, minStock } });
+      invalidateItemsCache();
       return;
     }
     const siteId = validSite(req(fd, "siteId", "Site"));
@@ -59,6 +61,7 @@ export async function saveItem(fd: FormData) {
       if (initial > 0)
         await moveStock(tx, { itemId: item.id, type: "IN", qty: initial, refType: "MANUAL", note: "Stok awal", userId: admin.id });
     });
+    invalidateItemsCache();
   });
 }
 
@@ -67,6 +70,7 @@ export async function toggleItem(fd: FormData) {
   await run("/items", async () => {
     const item = await prisma.inventoryItem.findUniqueOrThrow({ where: { id: req(fd, "id") } });
     await prisma.inventoryItem.update({ where: { id: item.id }, data: { isActive: !item.isActive } });
+    invalidateItemsCache();
   }, "Status barang diperbarui.");
 }
 

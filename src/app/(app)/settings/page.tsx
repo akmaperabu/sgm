@@ -27,6 +27,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
   const ctx = await getCtx(sp);
 
   const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      siteId: true,
+      isActive: true,
+      createdAt: true,
+    },
     orderBy: [{ role: "asc" }, { name: "asc" }],
   });
 

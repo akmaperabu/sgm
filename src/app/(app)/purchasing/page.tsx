@@ -11,6 +11,7 @@ import { Badge, Empty, Field, StatusBadge, btnDanger, btnPrimary, inputCls, sele
 import { ITEM_CATEGORIES, PR_FLOW, categoryLabel, siteLabel } from "@/lib/constants";
 import { fmtDate, num } from "@/lib/format";
 import { advancePurchase } from "@/actions/goods";
+import { getCachedActiveItems } from "@/lib/cache";
 import { Camera, CheckCircle2, Clock, PackageCheck, XCircle, Eye, Printer } from "lucide-react";
 
 function Progress({ status }: { status: string }) {
@@ -47,10 +48,13 @@ export default async function PurchasingPage({ searchParams }: { searchParams: S
         ...ctx.siteWhere,
         OR: [{ periodId: ctx.period.id }, ...(ctx.period.isActive ? [{ status: { notIn: ["Complete", "Rejected"] } }] : [])],
       },
-      include: { item: true, requester: true },
+      include: {
+        item: true,
+        requester: { select: { id: true, name: true, email: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
-    ctx.readOnly ? [] : prisma.inventoryItem.findMany({ where: { ...ctx.siteWhere, isActive: true }, orderBy: { name: "asc" } }),
+    ctx.readOnly ? [] : getCachedActiveItems(ctx.site),
   ]);
 
   const canEdit = ctx.isAdmin && !ctx.readOnly;

@@ -25,10 +25,28 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
           ...(ctx.period.isActive ? [{ status: "Upcoming" }] : []),
         ],
       },
-      include: { asset: true },
+      include: {
+        asset: {
+          select: { id: true, name: true, code: true, category: true, lastServiceDate: true },
+        },
+      },
       orderBy: [{ status: "desc" }, { dueDate: "asc" }],
     }),
-    prisma.asset.findMany({ where: { ...ctx.siteWhere, isActive: true }, orderBy: [{ siteId: "asc" }, { nextDueDate: "asc" }] }),
+    prisma.asset.findMany({
+      where: { ...ctx.siteWhere, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        category: true,
+        siteId: true,
+        intervalMonths: true,
+        scheduleDay: true,
+        nextDueDate: true,
+        lastServiceDate: true,
+      },
+      orderBy: [{ siteId: "asc" }, { nextDueDate: "asc" }],
+    }),
   ]);
 
   return (

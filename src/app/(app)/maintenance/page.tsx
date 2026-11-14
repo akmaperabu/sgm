@@ -19,6 +19,7 @@ export default async function MaintenanceMonitoringPage({ searchParams }: { sear
       include: {
         tickets: {
           where: { status: { in: ["Open", "In Progress", "Upcoming"] } },
+          select: { id: true, status: true, type: true, dueDate: true },
         },
         _count: {
           select: {
@@ -34,7 +35,10 @@ export default async function MaintenanceMonitoringPage({ searchParams }: { sear
         type: "CORRECTIVE",
         status: { in: ["Open", "In Progress"] },
       },
-      include: { asset: true, requester: true },
+      include: {
+        asset: { select: { id: true, code: true, name: true, category: true, siteId: true } },
+        requester: { select: { id: true, name: true, email: true } },
+      },
       orderBy: [{ createdAt: "asc" }],
     }),
     prisma.maintenanceTicket.findMany({
@@ -43,7 +47,9 @@ export default async function MaintenanceMonitoringPage({ searchParams }: { sear
         type: "PREVENTIVE",
         status: "Upcoming",
       },
-      include: { asset: true },
+      include: {
+        asset: { select: { id: true, code: true, name: true, category: true, siteId: true } },
+      },
       orderBy: [{ dueDate: "asc" }],
     }),
     prisma.maintenanceTicket.findMany({
@@ -55,7 +61,9 @@ export default async function MaintenanceMonitoringPage({ searchParams }: { sear
           lte: ctx.period.endDate,
         },
       },
-      include: { asset: true },
+      include: {
+        asset: { select: { id: true, code: true, name: true, category: true, siteId: true } },
+      },
       orderBy: [{ dueDate: "asc" }],
     }),
   ]);

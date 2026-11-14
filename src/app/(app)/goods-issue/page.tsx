@@ -20,15 +20,27 @@ export default async function GoodsIssuePage({ searchParams }: { searchParams: S
       ...ctx.siteWhere,
       OR: [{ periodId: ctx.period.id }, ...(ctx.period.isActive ? [{ status: "Pending Approval" }] : [])],
     },
-    include: { item: true, requester: true, ticket: true },
+    include: {
+      item: true,
+      requester: { select: { id: true, name: true, email: true } },
+      ticket: { select: { id: true, number: true, type: true } },
+    },
     orderBy: [{ createdAt: "desc" }],
   });
 
   const [items, tickets] = ctx.readOnly
     ? [[], []]
     : await Promise.all([
-      prisma.inventoryItem.findMany({ where: { ...ctx.siteWhere, isActive: true, currentStock: { gt: 0 } }, orderBy: [{ siteId: "asc" }, { name: "asc" }] }),
-      prisma.maintenanceTicket.findMany({ where: { ...ctx.siteWhere, status: { in: ["Open", "In Progress", "Upcoming"] } }, include: { asset: true }, orderBy: { createdAt: "desc" } }),
+      prisma.inventoryItem.findMany({
+        where: { ...ctx.siteWhere, isActive: true, currentStock: { gt: 0 } },
+        select: { id: true, siteId: true, code: true, name: true, currentStock: true, unit: true },
+        orderBy: [{ siteId: "asc" }, { name: "asc" }],
+      }),
+      prisma.maintenanceTicket.findMany({
+        where: { ...ctx.siteWhere, status: { in: ["Open", "In Progress", "Upcoming"] } },
+        select: { id: true, number: true, asset: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
   return (

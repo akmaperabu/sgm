@@ -9,6 +9,7 @@ import { PrintSlipDialog } from "@/components/print-slip-dialog";
 import { categoryLabel, ITEM_CATEGORIES, siteLabel } from "@/lib/constants";
 import { fmtDateTime, num } from "@/lib/format";
 import { advancePurchase, receiveManual } from "@/actions/goods";
+import { getCachedActiveItems } from "@/lib/cache";
 import { Camera } from "lucide-react";
 
 export default async function GoodsReceiptPage({ searchParams }: { searchParams: SearchParams }) {
@@ -23,10 +24,10 @@ export default async function GoodsReceiptPage({ searchParams }: { searchParams:
     }),
     prisma.stockMovement.findMany({
       where: { ...ctx.siteWhere, periodId: ctx.period.id, type: "IN" },
-      include: { item: true },
+      include: { item: { select: { id: true, code: true, name: true, category: true, unit: true } } },
       orderBy: { createdAt: "desc" },
     }),
-    ctx.isAdmin ? prisma.inventoryItem.findMany({ where: { ...ctx.siteWhere, isActive: true }, orderBy: [{ siteId: "asc" }, { name: "asc" }] }) : Promise.resolve([]),
+    ctx.isAdmin ? getCachedActiveItems(ctx.site) : Promise.resolve([]),
   ]);
   const total = moves.reduce((s, m) => s + m.qty, 0);
 
